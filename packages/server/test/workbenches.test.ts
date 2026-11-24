@@ -680,6 +680,91 @@ describe("a loaded workbench", { timeout: 30_000 }, () => {
     }
   });
 
+  it("injects PENGUIN_APP_ID into commands of workbench Sessions (including cross-agent) and leaves plain Sessions without it", async () => {
+    const command = `node -e "console.log('ENV_JSON=' + JSON.stringify({ app: process.env.PENGUIN_APP_ID ?? null, agent: process.env.PENGUIN_AGENT_ID ?? null, session: process.env.PENGUIN_SESSION_ID ?? null }))"`;
+    const mock = await startMockLLM((n) => {
+      const sent = requestText(mock.requests[n - 1]!);
+      const tag = /inspect-env:([a-z-]+)/.exec(sent)?.[1];
+      if (tag === undefined) return "A title";
+      if (sent.includes('"tool_result"')) return "done";
+      return { toolUse: { id: `toolu_env_${tag}`, name: "exec_command", input: { command } } };
+    });
+    try {
+      const configured = await owner.put(`/api/projects/${PROJECT}/models`, {
+        defaultModel: { provider: "custom", modelId: MOCK_MODEL_ID },
+        models: [
+          {
+            provider: "custom",
+            modelId: MOCK_MODEL_ID,
+            apiKey: "sk-mock",
+            baseUrl: mock.url,
+            contextWindow: 200_000,
+          },
+        ],
+      });
+      expect(configured.status).toBe(200);
+
+      const inspect = async (sessionId: string, tag: string) => {
+        const res = await owner.post(`/api/sessions/${sessionId}/tasks`, {
+          input: [{ type: "text", text: `inspect-env:${tag}` }],
+        });
+        expect(res.status).toBe(202);
+        await waitFor(() => t.deps.manager.statusOf(sessionId) === "idle", 20_000);
+        const answered = mock.requests.find((req) => {
+          const text = requestText(req);
+          return text.includes('"tool_result"') && text.includes(`toolu_env_${tag}`);
+        });
+        const text = answered ? requestText(answered) : "";
+        const match = /ENV_JSON=(\{[^\n\\]+(?:\\"[^\n]*?\})?)/.exec(text);
+        // Tool output inside the JSON request body has quotes escaped; parse the matched object.
+        const raw = /ENV_JSON=(\{.*?\})(?:\\n|"|\r|\n)/.exec(text)?.[1] ?? match?.[1];
+        expect(raw).toBeDefined();
+        return JSON.parse(raw!.replace(/\\"/g, '"')) as {
+          app: string | null;
+          agent: string | null;
+          session: string | null;
+        };
+      };
+
+      const own = (await (await owner.get(`${BASE}/demo/api/open`)).json()) as {
+        opened: { sessionId: string };
+      };
+      const ownEnv = await inspect(own.opened.sessionId, "own");
+      expect(ownEnv).toEqual({
+        app: `${AGENT}/demo`,
+        agent: AGENT,
+        session: own.opened.sessionId,
+      });
+
+      expect(
+        (await owner.post(`/api/projects/${PROJECT}/agents`, { agentId: "env_worker" })).status,
+      ).toBe(201);
+      const cross = (await (await owner.get(`${BASE}/demo/api/open?agent=env_worker`)).json()) as {
+        opened: { sessionId: string };
+      };
+      const crossEnv = await inspect(cross.opened.sessionId, "cross");
+      expect(crossEnv).toEqual({
+        app: `${AGENT}/demo`,
+        agent: "env_worker",
+        session: cross.opened.sessionId,
+      });
+
+      const plain = (await (
+        await owner.post(`/api/projects/${PROJECT}/agents/${AGENT}/sessions`, {
+          approvalMode: "allow-all",
+        })
+      ).json()) as SessionResponse;
+      const plainEnv = await inspect(plain.session.sessionId, "plain");
+      expect(plainEnv).toEqual({
+        app: null,
+        agent: AGENT,
+        session: plain.session.sessionId,
+      });
+    } finally {
+      await mock.close();
+    }
+  });
+
   it("hands a handler any body and sends back any content type; JSON stays the default", async () => {
     // An upload: not JSON, so the handler gets the bytes as sent — and never the app's cookie.
     const sent = new Uint8Array([0, 1, 2, 250, 251, 255]);
