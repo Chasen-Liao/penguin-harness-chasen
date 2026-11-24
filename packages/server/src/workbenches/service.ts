@@ -1414,6 +1414,7 @@ export class WorkbenchService implements Workbenches {
           approvalMode,
           source: "workbench",
           client: "workbench",
+          appId: `${agentId}/${folder.id}`,
         });
       },
       async run(sessionId: string, input: WorkbenchInput[]) {

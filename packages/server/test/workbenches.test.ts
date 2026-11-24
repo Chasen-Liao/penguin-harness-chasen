@@ -555,6 +555,8 @@ describe("a loaded workbench", { timeout: 30_000 }, () => {
         modelId: "workbench-test",
         approvalMode: "allow-all",
         source: "workbench",
+        client: "workbench",
+        appId: `${AGENT}/demo`,
         archived: true,
       },
     });
@@ -574,7 +576,35 @@ describe("a loaded workbench", { timeout: 30_000 }, () => {
     expect(active.sessions.map((s: { sessionId: string }) => s.sessionId)).not.toContain(sessionId);
     expect((await owner.patch(`/api/sessions/${sessionId}`, { archived: false })).status).toBe(200);
     const kept = (await (await owner.get(`/api/sessions/${sessionId}`)).json()) as SessionResponse;
-    expect(kept.session).toMatchObject({ source: "workbench", archived: false });
+    expect(kept.session).toMatchObject({
+      source: "workbench",
+      appId: `${AGENT}/demo`,
+      archived: false,
+    });
+
+    // Cross-agent workbench Sessions still attribute to the workbench's owning Agent, not the
+    // target Agent running the Session; HTTP callers cannot forge appId on normal Sessions.
+    expect(
+      (await owner.post(`/api/projects/${PROJECT}/agents`, { agentId: "worker" })).status,
+    ).toBe(201);
+    const cross = (await (await owner.get(`${BASE}/demo/api/open?agent=worker`)).json()) as {
+      opened: { sessionId: string; agentId: string; appId?: string };
+    };
+    expect(cross.opened).toMatchObject({
+      agentId: "worker",
+      appId: `${AGENT}/demo`,
+    });
+    const crossInfo = (await (
+      await owner.get(`/api/sessions/${cross.opened.sessionId}`)
+    ).json()) as SessionResponse;
+    expect(crossInfo.session).toMatchObject({ agentId: "worker", appId: `${AGENT}/demo` });
+
+    const spoofed = (await (
+      await owner.post(`/api/projects/${PROJECT}/agents/${AGENT}/sessions`, {
+        appId: `${AGENT}/demo`,
+      })
+    ).json()) as SessionResponse;
+    expect(spoofed.session.appId).toBeUndefined();
   });
 
   it("opens a Session that only talks with deny-all: its tool calls are denied, while a Session opened without the option runs them", async () => {
