@@ -143,6 +143,17 @@ describe("penguin app id resolution & info", () => {
       id: "slides",
       agentEnabled: true,
     });
+
+    // When the Agent-wide switch is off, info reports the app as disabled (agent switch off).
+    server.addApp({
+      agentId: "paused_agent",
+      workbenchId: "tool",
+      enabled: true,
+      agentEnabled: false,
+    });
+    stdout.length = 0;
+    expect(await cli(["app", "info", "paused_agent/tool"])).toBe(0);
+    expect(out()).toContain("Status: disabled (agent switch off)");
   });
 
   it("falls back to PENGUIN_APP_ID when app-id is omitted, and resolves bare workbenchId via --agent-id or PENGUIN_AGENT_ID", async () => {
@@ -288,7 +299,15 @@ describe("penguin app call", () => {
     expect(await cli(["app", "call", "default_agent/slides"])).toBe(1);
     expect(err()).toContain("Missing API path");
 
-    for (const badPath of ["status", "//evil.com/x", "/../other/api/x", "/%2e%2e/secret", "/a#b"]) {
+    for (const badPath of [
+      "status",
+      "//evil.com/x",
+      "/../other/api/x",
+      "/%2e%2e/secret",
+      "/a#b",
+      "/with space",
+      "/with\nnewline",
+    ]) {
       stderr.length = 0;
       expect(await cli(["app", "call", "default_agent/slides", badPath])).toBe(1);
       expect(err()).toContain("Invalid API path");

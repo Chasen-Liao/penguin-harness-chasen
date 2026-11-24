@@ -468,7 +468,6 @@ export class FakeServer {
       projectId,
       agentId,
       agentName: overrides.agentName ?? agentId,
-      workbenchId,
       name: overrides.name ?? workbenchId,
       version: "1.0.0",
       title: overrides.title ?? workbenchId,

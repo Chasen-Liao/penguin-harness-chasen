@@ -107,7 +107,7 @@ function printInfo(
     wb.enabled === false
       ? t.app.valueDisabled()
       : !agentEnabled
-        ? `${t.app.valueEnabled()} (${t.app.valueAgentDisabled()})`
+        ? `${t.app.valueDisabled()} (${t.app.valueAgentDisabled()})`
         : t.app.valueEnabled();
   const lines: string[] = [
     `${t.app.fieldId()}: ${target.appId}`,
@@ -160,9 +160,11 @@ export function registerAppCommand(app: Command, t: Messages): void {
         "GET",
         `/api/projects/${enc(projectId)}/app-center${query}`,
       );
-      const filterAgent = opts.agentId?.trim();
+      const filterAgent = opts.agentId !== undefined ? opts.agentId.trim() : undefined;
       const rows = (
-        filterAgent ? res.shortcuts.filter((s) => s.agentId === filterAgent) : res.shortcuts
+        filterAgent !== undefined
+          ? res.shortcuts.filter((s) => s.agentId === filterAgent)
+          : res.shortcuts
       ).map((s) => ({
         appId: formatAppId(s.agentId, s.workbenchId),
         ...s,

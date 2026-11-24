@@ -98,7 +98,14 @@ export function resolveAppId(
  */
 export function validateAppApiPath(raw: string): string | null {
   const value = raw.trim();
-  if (!value.startsWith("/") || value.startsWith("//") || value.includes("#")) return null;
+  if (
+    !value.startsWith("/") ||
+    value.startsWith("//") ||
+    value.includes("#") ||
+    /[\x00-\x1f\x7f\s]/.test(value)
+  ) {
+    return null;
+  }
   const queryStart = value.indexOf("?");
   const pathname = queryStart === -1 ? value : value.slice(0, queryStart);
   if (pathname.includes("\\")) return null;
