@@ -145,8 +145,9 @@ export class HttpModule {
     );
 
     const authenticateSessionToken = (bearer: string) => {
-      const secret = this.auth.localApiToken();
-      if (secret === null) return null;
+      const secret =
+        typeof this.auth.localApiToken === "function" ? this.auth.localApiToken() : null;
+      if (secret === null || !this.sessions || !this.projects) return null;
       const sessionId = verifySessionToken(secret, bearer);
       if (sessionId === null) return null;
       const row = this.sessions.findById(sessionId);
