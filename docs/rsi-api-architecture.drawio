@@ -1,0 +1,138 @@
+<mxfile host="app.diagrams.net" agent="Claude Code" type="device">
+  <diagram id="rsi-api-architecture" name="RSI API v1 架构">
+    <mxGraphModel dx="2200" dy="1100" grid="1" gridSize="10" guides="1" tooltips="1" connect="1" arrows="1" fold="1" page="1" pageScale="1" pageWidth="2040" pageHeight="1000" math="0" shadow="0" adaptiveColors="auto">
+      <root>
+        <mxCell id="0"/>
+        <mxCell id="1" parent="0"/>
+
+        <mxCell id="title" value="&lt;b style='font-size:22px'&gt;RSI API v1 · 自进化闭环架构&lt;/b&gt;&lt;br&gt;&lt;font color='#475569'&gt;L1 外部 Harness → L2 薄 Adapter → L3 内部平台　｜　① 探测 → ② 拉历史 → ③ 增量推送 → ④ 冻结基准 → ⑤ 拉 v0 优化 v1 → ⑥ 证明通过才写回&lt;/font&gt;" style="text;html=1;align=left;verticalAlign=top;whiteSpace=wrap;" vertex="1" parent="1">
+          <mxGeometry x="40" y="16" width="1900" height="76" as="geometry"/>
+        </mxCell>
+
+        <mxCell id="ext" value="L1 · 外部 Harness　｜　照常运行，零阻塞采集" style="swimlane;startSize=40;html=1;fillColor=#475569;swimlaneFillColor=#F8FAFC;strokeColor=#94A3B8;strokeWidth=2;fontColor=#FFFFFF;fontStyle=1;fontSize=15;verticalAlign=top;shadow=1;" vertex="1" parent="1">
+          <mxGeometry x="40" y="130" width="460" height="720" as="geometry"/>
+        </mxCell>
+        <mxCell id="adapter" value="L2 · Adapter 翻译层　｜　薄适配：只翻译，不改写" style="swimlane;startSize=40;html=1;fillColor=#2563EB;swimlaneFillColor=#F5F9FF;strokeColor=#93B4F5;strokeWidth=2;fontColor=#FFFFFF;fontStyle=1;fontSize=15;verticalAlign=top;shadow=1;" vertex="1" parent="1">
+          <mxGeometry x="610" y="130" width="460" height="720" as="geometry"/>
+        </mxCell>
+        <mxCell id="platform" value="L3 · 内部自进化平台　｜　采集 → 冻结 → 优化 → 验证" style="swimlane;startSize=40;html=1;fillColor=#6D28D9;swimlaneFillColor=#FAF7FF;strokeColor=#B9A6F0;strokeWidth=2;fontColor=#FFFFFF;fontStyle=1;fontSize=15;verticalAlign=top;shadow=1;" vertex="1" parent="1">
+          <mxGeometry x="1180" y="130" width="820" height="720" as="geometry"/>
+        </mxCell>
+
+        <mxCell id="ext_harness" value="&lt;b&gt;Harness 运行&lt;/b&gt;&lt;br&gt;Codex · Claude Code&lt;br&gt;OpenCode · Penguin · HTTP" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#FFFFFF;strokeColor=#94A3B8;fontSize=12;" vertex="1" parent="ext">
+          <mxGeometry x="15" y="60" width="190" height="90" as="geometry"/>
+        </mxCell>
+        <mxCell id="ext_hook" value="&lt;b&gt;观察型 Hook&lt;/b&gt;&lt;br&gt;空 stdout / exit 0&lt;br&gt;零阻塞、不改行为" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#FFFFFF;strokeColor=#94A3B8;fontSize=12;" vertex="1" parent="ext">
+          <mxGeometry x="245" y="60" width="200" height="90" as="geometry"/>
+        </mxCell>
+        <mxCell id="ext_log" value="&lt;b&gt;会话与日志&lt;/b&gt;&lt;br&gt;消息 · 工具调用 · 子会话&lt;br&gt;Skill 使用证据" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#FFFFFF;strokeColor=#94A3B8;fontSize=12;" vertex="1" parent="ext">
+          <mxGeometry x="245" y="180" width="200" height="90" as="geometry"/>
+        </mxCell>
+        <mxCell id="ext_skill" value="&lt;b&gt;线上 Skill 目录&lt;/b&gt;&lt;br&gt;SKILL.md + scripts&lt;br&gt;+ references" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#E7F6EC;strokeColor=#8BCB9F;fontSize=12;" vertex="1" parent="ext">
+          <mxGeometry x="245" y="300" width="200" height="110" as="geometry"/>
+        </mxCell>
+        <mxCell id="ext_note" value="&lt;b&gt;证据分层&lt;/b&gt;：装了什么 ≠ 用了什么&lt;br&gt;只有『已加载 / 有使用』计入 active_skills" style="rounded=1;whiteSpace=wrap;html=1;dashed=1;fillColor=#FFF9DB;strokeColor=#E9D58A;fontSize=11;" vertex="1" parent="ext">
+          <mxGeometry x="15" y="440" width="430" height="110" as="geometry"/>
+        </mxCell>
+
+        <mxCell id="adp_reader" value="&lt;b&gt;统一读取器&lt;/b&gt;&lt;br&gt;+ 本地持久队列&lt;br&gt;&lt;br&gt;revision 单调分配&lt;br&gt;断网缓冲 · 未 ack 重推&lt;br&gt;运行中零阻塞" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#EEF4FF;strokeColor=#9DB8F2;fontSize=12;" vertex="1" parent="adapter">
+          <mxGeometry x="15" y="60" width="205" height="210" as="geometry"/>
+        </mxCell>
+        <mxCell id="adp_push" value="&lt;b&gt;③ traces.push&lt;/b&gt;&lt;br&gt;delta / snapshot&lt;br&gt;ingest token" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#EEF4FF;strokeColor=#9DB8F2;fontSize=12;" vertex="1" parent="adapter">
+          <mxGeometry x="245" y="60" width="200" height="90" as="geometry"/>
+        </mxCell>
+        <mxCell id="adp_api_read" value="&lt;b&gt;① harness.info&lt;/b&gt;&lt;br&gt;&lt;b&gt;② traces.list / pull&lt;/b&gt;&lt;br&gt;按 ID 拉完整快照" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#EEF4FF;strokeColor=#9DB8F2;fontSize=12;" vertex="1" parent="adapter">
+          <mxGeometry x="245" y="180" width="200" height="90" as="geometry"/>
+        </mxCell>
+        <mxCell id="adp_skill" value="&lt;b&gt;⑤ skills.pull&lt;/b&gt;&lt;br&gt;&lt;b&gt;⑥ skills.push / rollback&lt;/b&gt;&lt;br&gt;整包 · 备份 · 原子替换" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#E7F6EC;strokeColor=#8BCB9F;fontSize=12;" vertex="1" parent="adapter">
+          <mxGeometry x="245" y="300" width="200" height="110" as="geometry"/>
+        </mxCell>
+        <mxCell id="adp_note" value="&lt;b&gt;凭证分权&lt;/b&gt;：control token ↔ ingest token&lt;br&gt;薄 Adapter 只校验结构与摘要，不重跑评测" style="rounded=1;whiteSpace=wrap;html=1;dashed=1;fillColor=#FFF9DB;strokeColor=#E9D58A;fontSize=11;" vertex="1" parent="adapter">
+          <mxGeometry x="15" y="440" width="430" height="110" as="geometry"/>
+        </mxCell>
+
+        <mxCell id="ph_push" value="&lt;b&gt;③ 接收端&lt;/b&gt;&lt;br&gt;revision + 双摘要仲裁&lt;br&gt;事务提交后才 ack" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#EEF4FF;strokeColor=#9DB8F2;fontSize=12;" vertex="1" parent="platform">
+          <mxGeometry x="15" y="60" width="240" height="90" as="geometry"/>
+        </mxCell>
+        <mxCell id="ph_store" value="&lt;b&gt;rsi_* 独立存储&lt;/b&gt;&lt;br&gt;sessions · revisions" style="shape=cylinder3;whiteSpace=wrap;html=1;boundedLbl=1;backgroundOutline=1;size=10;fillColor=#F3EEFF;strokeColor=#B9A6F0;fontSize=12;" vertex="1" parent="platform">
+          <mxGeometry x="295" y="60" width="240" height="90" as="geometry"/>
+        </mxCell>
+        <mxCell id="ph_bench" value="&lt;b&gt;④ 冻结 Benchmark&lt;/b&gt;&lt;br&gt;revision + sha256 → pin&lt;br&gt;外部改动不影响尺子" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#F3EEFF;strokeColor=#B9A6F0;fontSize=12;" vertex="1" parent="platform">
+          <mxGeometry x="575" y="60" width="230" height="90" as="geometry"/>
+        </mxCell>
+        <mxCell id="ph_import" value="&lt;b&gt;①② 历史导入&lt;/b&gt;&lt;br&gt;按 ID 拉取后&lt;br&gt;走同一套合并规则" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#EEF4FF;strokeColor=#9DB8F2;fontSize=12;" vertex="1" parent="platform">
+          <mxGeometry x="15" y="180" width="240" height="90" as="geometry"/>
+        </mxCell>
+        <mxCell id="ph_opt" value="&lt;b&gt;隔离优化区&lt;/b&gt;&lt;br&gt;v0 基线 → 候选 v1&lt;br&gt;同模型同配置 · runs ≥ 2" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#F3EEFF;strokeColor=#B9A6F0;fontSize=12;" vertex="1" parent="platform">
+          <mxGeometry x="575" y="180" width="230" height="90" as="geometry"/>
+        </mxCell>
+        <mxCell id="ph_gate" value="&lt;b&gt;⑥ VerificationProof 闸门&lt;/b&gt;&lt;br&gt;8 步校验 · regressions = []&lt;br&gt;不达标只能人工 override" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#FFF6E0;strokeColor=#E8C36A;fontSize=12;" vertex="1" parent="platform">
+          <mxGeometry x="295" y="300" width="240" height="110" as="geometry"/>
+        </mxCell>
+        <mxCell id="ph_visibility" value="&lt;b&gt;五域四态&lt;/b&gt;&lt;br&gt;messages · tools · skill_usage&lt;br&gt;subagents · raw_log&lt;br&gt;available / partial / unavailable / unknown" style="rounded=1;whiteSpace=wrap;html=1;dashed=1;fillColor=#FFF9DB;strokeColor=#E9D58A;fontSize=10;" vertex="1" parent="platform">
+          <mxGeometry x="15" y="440" width="240" height="110" as="geometry"/>
+        </mxCell>
+        <mxCell id="ph_error" value="&lt;b&gt;RsiError 六类恢复&lt;/b&gt;&lt;br&gt;补拉 · 重推 · 重授权&lt;br&gt;人工处置 · 降级 · 合并" style="rounded=1;whiteSpace=wrap;html=1;dashed=1;fillColor=#FFF9DB;strokeColor=#E9D58A;fontSize=11;" vertex="1" parent="platform">
+          <mxGeometry x="295" y="440" width="240" height="110" as="geometry"/>
+        </mxCell>
+        <mxCell id="ph_workbench" value="&lt;b&gt;工作台三标签&lt;/b&gt;&lt;br&gt;出题 → 评估 → 优化&lt;br&gt;覆盖度 · 帕累托 · 逐题回归" style="rounded=1;whiteSpace=wrap;html=1;dashed=1;fillColor=#FFF9DB;strokeColor=#E9D58A;fontSize=11;" vertex="1" parent="platform">
+          <mxGeometry x="575" y="440" width="230" height="110" as="geometry"/>
+        </mxCell>
+
+        <mxCell id="bnd1" value="协议边界&lt;br&gt;HTTPS · JSON&lt;br&gt;Bearer Token" style="text;html=1;align=center;verticalAlign=middle;fontSize=10;fontColor=#64748B;whiteSpace=wrap;" vertex="1" parent="1">
+          <mxGeometry x="500" y="170" width="110" height="56" as="geometry"/>
+        </mxCell>
+        <mxCell id="bnd2" value="push 出站&lt;br&gt;pull 入站" style="text;html=1;align=center;verticalAlign=middle;fontSize=10;fontColor=#64748B;whiteSpace=wrap;" vertex="1" parent="1">
+          <mxGeometry x="1070" y="170" width="110" height="56" as="geometry"/>
+        </mxCell>
+
+        <mxCell id="e_hook_reader" value="实时事件" style="edgeStyle=orthogonalEdgeStyle;rounded=1;html=1;strokeColor=#2563EB;strokeWidth=2;flowAnimation=1;labelBackgroundColor=default;defaultLabelBackgroundColor=page;fontColor=#1D4ED8;fontSize=11;" edge="1" parent="1" source="ext_hook" target="adp_reader">
+          <mxGeometry relative="1" as="geometry"/>
+        </mxCell>
+        <mxCell id="e_log_reader" value="历史会话" style="edgeStyle=orthogonalEdgeStyle;rounded=1;html=1;strokeColor=#2563EB;strokeWidth=2;flowAnimation=1;labelBackgroundColor=default;defaultLabelBackgroundColor=page;fontColor=#1D4ED8;fontSize=11;" edge="1" parent="1" source="ext_log" target="adp_reader">
+          <mxGeometry relative="1" as="geometry"/>
+        </mxCell>
+        <mxCell id="e_reader_push" value="" style="edgeStyle=orthogonalEdgeStyle;rounded=1;html=1;strokeColor=#2563EB;strokeWidth=2;flowAnimation=1;" edge="1" parent="adapter" source="adp_reader" target="adp_push">
+          <mxGeometry relative="1" as="geometry"/>
+        </mxCell>
+        <mxCell id="e_reader_api" value="" style="edgeStyle=orthogonalEdgeStyle;rounded=1;html=1;strokeColor=#2563EB;strokeWidth=2;flowAnimation=1;" edge="1" parent="adapter" source="adp_reader" target="adp_api_read">
+          <mxGeometry relative="1" as="geometry"/>
+        </mxCell>
+        <mxCell id="e_push_l3" value="③ 推送" style="edgeStyle=orthogonalEdgeStyle;rounded=1;html=1;strokeColor=#2563EB;strokeWidth=2;flowAnimation=1;labelBackgroundColor=default;defaultLabelBackgroundColor=page;fontColor=#1D4ED8;fontSize=11;" edge="1" parent="1" source="adp_push" target="ph_push">
+          <mxGeometry relative="1" as="geometry"/>
+        </mxCell>
+        <mxCell id="e_import_api" value="①② 拉取" style="edgeStyle=orthogonalEdgeStyle;rounded=1;html=1;dashed=1;dashPattern=8 4;strokeColor=#94A3B8;strokeWidth=2;labelBackgroundColor=default;defaultLabelBackgroundColor=page;fontColor=#64748B;fontSize=11;" edge="1" parent="1" source="ph_import" target="adp_api_read">
+          <mxGeometry relative="1" as="geometry"/>
+        </mxCell>
+        <mxCell id="e_import_store" value="同一合并规则" style="edgeStyle=orthogonalEdgeStyle;rounded=1;html=1;dashed=1;dashPattern=8 4;strokeColor=#94A3B8;strokeWidth=2;labelBackgroundColor=default;defaultLabelBackgroundColor=page;fontColor=#64748B;fontSize=11;" edge="1" parent="platform" source="ph_import" target="ph_store">
+          <mxGeometry relative="1" as="geometry"/>
+        </mxCell>
+        <mxCell id="e_ack" value="ack" style="edgeStyle=orthogonalEdgeStyle;rounded=1;html=1;strokeColor=#2563EB;strokeWidth=2;flowAnimation=1;labelBackgroundColor=default;defaultLabelBackgroundColor=page;fontColor=#1D4ED8;fontSize=11;" edge="1" parent="platform" source="ph_push" target="ph_store">
+          <mxGeometry relative="1" as="geometry"/>
+        </mxCell>
+        <mxCell id="e_pin" value="④ 冻结" style="edgeStyle=orthogonalEdgeStyle;rounded=1;html=1;strokeColor=#7C3AED;strokeWidth=2;flowAnimation=1;labelBackgroundColor=default;defaultLabelBackgroundColor=page;fontColor=#5B21B6;fontSize=11;" edge="1" parent="platform" source="ph_store" target="ph_bench">
+          <mxGeometry relative="1" as="geometry"/>
+        </mxCell>
+        <mxCell id="e_iter" value="同一基准迭代" style="edgeStyle=orthogonalEdgeStyle;rounded=1;html=1;strokeColor=#7C3AED;strokeWidth=2;flowAnimation=1;labelBackgroundColor=default;defaultLabelBackgroundColor=page;fontColor=#5B21B6;fontSize=11;" edge="1" parent="platform" source="ph_bench" target="ph_opt">
+          <mxGeometry relative="1" as="geometry"/>
+        </mxCell>
+        <mxCell id="e_proof" value="v1 + 指标" style="edgeStyle=orthogonalEdgeStyle;rounded=1;html=1;strokeColor=#7C3AED;strokeWidth=2;flowAnimation=1;labelBackgroundColor=default;defaultLabelBackgroundColor=page;fontColor=#5B21B6;fontSize=11;" edge="1" parent="platform" source="ph_opt" target="ph_gate">
+          <mxGeometry relative="1" as="geometry"/>
+        </mxCell>
+        <mxCell id="e_gate_skill" value="⑥ Proof + base_hashes" style="edgeStyle=orthogonalEdgeStyle;rounded=1;html=1;strokeColor=#059669;strokeWidth=2;flowAnimation=1;labelBackgroundColor=default;defaultLabelBackgroundColor=page;fontColor=#047857;fontSize=11;" edge="1" parent="1" source="ph_gate" target="adp_skill">
+          <mxGeometry relative="1" as="geometry"/>
+        </mxCell>
+        <mxCell id="e_skill_back" value="⑤ 读 v0 ｜ ⑥ 写回 v1" style="edgeStyle=orthogonalEdgeStyle;rounded=1;html=1;strokeColor=#059669;strokeWidth=2;flowAnimation=1;startArrow=classic;startFill=1;labelBackgroundColor=default;defaultLabelBackgroundColor=page;fontColor=#047857;fontSize=11;" edge="1" parent="1" source="adp_skill" target="ext_skill">
+          <mxGeometry relative="1" as="geometry"/>
+        </mxCell>
+
+        <mxCell id="redlines" value="&lt;b&gt;五条架构红线&lt;/b&gt;：非阻塞采集 · 单源版本仲裁 · 缺口显式不造假 · 先验后写可回滚 · 评测隔离防泄题" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#FFF9DB;strokeColor=#E9D58A;fontSize=13;arcSize=20;" vertex="1" parent="1">
+          <mxGeometry x="40" y="880" width="1960" height="54" as="geometry"/>
+        </mxCell>
+        <mxCell id="legend" value="&lt;font color='#2563EB'&gt;━ 采集与推送&lt;/font&gt;　　&lt;font color='#7C3AED'&gt;━ 冻结与离线优化&lt;/font&gt;　　&lt;font color='#059669'&gt;━ 验证与安全写回&lt;/font&gt;　　&lt;font color='#94A3B8'&gt;┈ 平台入站拉取&lt;/font&gt;　　&lt;font color='#475569'&gt;L1 / L2 / L3 = 三层框架；边上的流动光点 = 数据方向&lt;/font&gt;" style="text;html=1;align=left;verticalAlign=middle;whiteSpace=wrap;fontSize=12;" vertex="1" parent="1">
+          <mxGeometry x="40" y="944" width="1960" height="30" as="geometry"/>
+        </mxCell>
+      </root>
+    </mxGraphModel>
+  </diagram>
+</mxfile>

@@ -1,0 +1,2474 @@
+<!doctype html>
+<html lang="zh-CN">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>RSI API 架构设计与统一协议规范（V2）</title>
+    <style>
+      :root {
+        --bg: #faf9f6;
+        --surface: #ffffff;
+        --surface-muted: #f3f2ed;
+        --border: #e5e2d9;
+        --border-strong: #cfc9bc;
+        --text: #1c1b18;
+        --text-secondary: #57544d;
+        --text-muted: #848076;
+        --accent: #2457a6;
+        --accent-soft: #edf3fb;
+        --accent-border: #adc6ea;
+        --ok: #1d744a;
+        --ok-soft: #ebf7f1;
+        --ok-border: #a7d8be;
+        --warn: #b34926;
+        --warn-soft: #fcf1ec;
+        --warn-border: #e7b7a4;
+        --radius: 10px;
+        --radius-sm: 6px;
+        --font-sans:
+          -apple-system, BlinkMacSystemFont, "Segoe UI", "PingFang SC", "Hiragino Sans GB",
+          "Microsoft YaHei", sans-serif;
+      }
+
+      * {
+        box-sizing: border-box;
+      }
+
+      html {
+        scroll-behavior: smooth;
+      }
+
+      body {
+        margin: 0;
+        background: var(--bg);
+        color: var(--text);
+        font-family: var(--font-sans);
+        font-size: 15px;
+        line-height: 1.72;
+        -webkit-font-smoothing: antialiased;
+      }
+
+      code,
+      kbd,
+      pre {
+        font-family: ui-monospace, Menlo, Consolas, monospace;
+      }
+
+      code {
+        font-size: 0.9em;
+        padding: 1px 5px;
+        border-radius: 4px;
+        background: var(--surface-muted);
+        color: #1d3966;
+      }
+
+      /* Top navigation */
+      .topbar {
+        position: sticky;
+        top: 0;
+        z-index: 30;
+        background: var(--bg);
+        border-bottom: 1px solid var(--border);
+      }
+
+      .topbar-inner {
+        max-width: 1120px;
+        margin: 0 auto;
+        padding: 12px 24px;
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 16px;
+        flex-wrap: wrap;
+      }
+
+      .brand {
+        font-weight: 650;
+        font-size: 15px;
+        letter-spacing: -0.01em;
+        color: var(--text);
+        text-decoration: none;
+        display: flex;
+        align-items: center;
+        gap: 10px;
+      }
+
+      .brand-tag {
+        font-size: 12px;
+        font-weight: 500;
+        color: var(--text-secondary);
+        background: var(--surface-muted);
+        border: 1px solid var(--border);
+        padding: 1px 8px;
+        border-radius: 4px;
+      }
+
+      .nav-links {
+        display: flex;
+        align-items: center;
+        gap: 18px;
+        flex-wrap: wrap;
+      }
+
+      .nav-links a {
+        color: var(--text-secondary);
+        text-decoration: none;
+        font-size: 13.5px;
+        transition: color 0.15s ease;
+      }
+
+      .nav-links a:hover,
+      .nav-links a.active {
+        color: var(--accent);
+      }
+
+      .kbd-hint {
+        font-size: 12px;
+        color: var(--text-muted);
+        display: inline-flex;
+        align-items: center;
+        gap: 4px;
+      }
+
+      kbd {
+        font-size: 11px;
+        padding: 1px 5px;
+        background: var(--surface);
+        border: 1px solid var(--border-strong);
+        border-radius: 4px;
+        color: var(--text-secondary);
+      }
+
+      /* Page container */
+      .page {
+        max-width: 1120px;
+        margin: 0 auto;
+        padding: 40px 24px 96px;
+      }
+
+      /* Hero & Pyramid Thesis */
+      .hero {
+        padding-bottom: 36px;
+        border-bottom: 1px solid var(--border);
+      }
+
+      h1 {
+        margin: 0 0 18px;
+        font-size: clamp(26px, 3.6vw, 35px);
+        line-height: 1.24;
+        letter-spacing: -0.02em;
+        font-weight: 700;
+      }
+
+      .thesis {
+        margin: 0 0 28px;
+        padding: 18px 22px;
+        background: var(--surface);
+        border: 1px solid var(--border);
+        border-left: 4px solid var(--accent);
+        border-radius: 0 var(--radius) var(--radius) 0;
+        font-size: 15.5px;
+        line-height: 1.75;
+        color: var(--text);
+      }
+
+      .thesis strong {
+        color: var(--accent);
+        font-weight: 650;
+      }
+
+      /* SCQA Grid */
+      .scqa-grid {
+        display: grid;
+        grid-template-columns: repeat(4, minmax(0, 1fr));
+        border: 1px solid var(--border);
+        border-radius: var(--radius);
+        background: var(--surface);
+        overflow: hidden;
+      }
+
+      .scqa-item {
+        padding: 18px 20px;
+        border-right: 1px solid var(--border);
+      }
+
+      .scqa-item:last-child {
+        border-right: none;
+      }
+
+      .scqa-label {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        margin-bottom: 8px;
+        font-size: 13px;
+        font-weight: 650;
+        color: var(--text);
+      }
+
+      .scqa-code {
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        width: 22px;
+        height: 22px;
+        border-radius: 4px;
+        font-size: 12px;
+        font-weight: 650;
+        font-variant-numeric: tabular-nums;
+        background: var(--surface-muted);
+        border: 1px solid var(--border);
+        color: var(--text-secondary);
+      }
+
+      .scqa-item.is-answer {
+        background: var(--accent-soft);
+      }
+
+      .scqa-item.is-answer .scqa-code {
+        background: var(--accent);
+        border-color: var(--accent);
+        color: #ffffff;
+      }
+
+      .scqa-item p {
+        margin: 0;
+        font-size: 13.5px;
+        line-height: 1.65;
+        color: var(--text-secondary);
+      }
+
+      /* Sections */
+      section {
+        padding: 48px 0;
+        border-bottom: 1px solid var(--border);
+        scroll-margin-top: 64px;
+      }
+
+      section:last-of-type {
+        border-bottom: none;
+      }
+
+      .section-head {
+        margin-bottom: 24px;
+      }
+
+      .section-num {
+        font-size: 12.5px;
+        font-weight: 600;
+        font-variant-numeric: tabular-nums;
+        color: var(--text-muted);
+        margin-bottom: 4px;
+      }
+
+      h2 {
+        margin: 0 0 10px;
+        font-size: 23px;
+        line-height: 1.32;
+        letter-spacing: -0.015em;
+        font-weight: 700;
+      }
+
+      .section-lead {
+        margin: 0;
+        max-width: 840px;
+        color: var(--text-secondary);
+        font-size: 15px;
+      }
+
+      h3 {
+        margin: 28px 0 14px;
+        font-size: 16.5px;
+        font-weight: 650;
+        color: var(--text);
+      }
+
+      /* Interactive Diagram Stage */
+      .stage {
+        background: var(--surface);
+        border: 1px solid var(--border);
+        border-radius: var(--radius);
+        overflow: hidden;
+      }
+
+      .stage-toolbar {
+        padding: 12px 18px;
+        background: var(--surface-muted);
+        border-bottom: 1px solid var(--border);
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 12px;
+        flex-wrap: wrap;
+      }
+
+      .stage-title-group {
+        display: flex;
+        align-items: center;
+        gap: 10px;
+      }
+
+      .stage-title {
+        font-size: 13.5px;
+        font-weight: 650;
+        color: var(--text);
+      }
+
+      .step-counter {
+        font-size: 12px;
+        font-weight: 600;
+        font-variant-numeric: tabular-nums;
+        color: var(--accent);
+        background: var(--accent-soft);
+        border: 1px solid var(--accent-border);
+        padding: 2px 8px;
+        border-radius: 4px;
+      }
+
+      .controls {
+        display: flex;
+        align-items: center;
+        gap: 6px;
+        flex-wrap: wrap;
+      }
+
+      .btn {
+        appearance: none;
+        font-family: var(--font-sans);
+        font-size: 13px;
+        font-weight: 500;
+        line-height: 1;
+        padding: 8px 12px;
+        border-radius: var(--radius-sm);
+        border: 1px solid var(--border-strong);
+        background: var(--surface);
+        color: var(--text);
+        cursor: pointer;
+        transition:
+          background 0.15s ease,
+          border-color 0.15s ease,
+          color 0.15s ease;
+      }
+
+      .btn:hover:not(:disabled) {
+        background: var(--surface-muted);
+        border-color: #b8b1a3;
+      }
+
+      .btn:disabled {
+        opacity: 0.42;
+        cursor: not-allowed;
+      }
+
+      .btn-primary {
+        background: var(--accent);
+        border-color: var(--accent);
+        color: #ffffff;
+      }
+
+      .btn-primary:hover:not(:disabled) {
+        background: #1d488c;
+        border-color: #1d488c;
+      }
+
+      .btn-active {
+        background: var(--accent-soft);
+        border-color: var(--accent);
+        color: var(--accent);
+      }
+
+      .stage-canvas {
+        padding: 18px 18px 12px;
+        overflow-x: auto;
+        background: var(--surface);
+      }
+
+      .stage-canvas svg {
+        display: block;
+        width: 100%;
+        min-width: 760px;
+        height: auto;
+      }
+
+      /* SVG Animation States */
+      .svg-group-box {
+        fill: #faf9f6;
+        stroke: #ddd9ce;
+        stroke-width: 1.25;
+      }
+
+      .svg-group-box.is-boundary {
+        fill: #f6f8fb;
+        stroke: #c4d4ea;
+        stroke-dasharray: 6 5;
+      }
+
+      .svg-group-title {
+        font-size: 12px;
+        font-weight: 650;
+        fill: #646159;
+        letter-spacing: 0.01em;
+      }
+
+      .node {
+        transition: opacity 0.18s ease;
+      }
+
+      .node rect {
+        fill: #ffffff;
+        stroke: #d7d3c8;
+        stroke-width: 1.4;
+        rx: 8;
+        transition:
+          fill 0.18s ease,
+          stroke 0.18s ease,
+          stroke-width 0.18s ease;
+      }
+
+      .node .n-title {
+        font-size: 13px;
+        font-weight: 650;
+        fill: #1c1b18;
+        transition: fill 0.18s ease;
+      }
+
+      .node .n-sub {
+        font-size: 11.5px;
+        fill: #6d6960;
+        transition: fill 0.18s ease;
+      }
+
+      .node[data-state="upcoming"] {
+        opacity: 0.24;
+      }
+
+      .node[data-state="done"] {
+        opacity: 0.9;
+      }
+
+      .node[data-state="done"] rect {
+        fill: #fbfbfa;
+        stroke: #b9c8df;
+      }
+
+      .node[data-state="active"] {
+        opacity: 1;
+      }
+
+      .node[data-state="active"] rect {
+        fill: var(--accent-soft);
+        stroke: var(--accent);
+        stroke-width: 2;
+      }
+
+      .node[data-state="active"] .n-title {
+        fill: #163b75;
+      }
+
+      .node[data-state="active"].tone-ok rect {
+        fill: var(--ok-soft);
+        stroke: var(--ok);
+      }
+
+      .node[data-state="active"].tone-ok .n-title {
+        fill: #135435;
+      }
+
+      .node[data-state="done"].tone-ok rect {
+        fill: #f5fbf7;
+        stroke: var(--ok-border);
+      }
+
+      .node[data-state="active"].tone-warn rect {
+        fill: var(--warn-soft);
+        stroke: var(--warn);
+      }
+
+      .node[data-state="active"].tone-warn .n-title {
+        fill: #8c3416;
+      }
+
+      .edge {
+        fill: none;
+        stroke: #b9c7dd;
+        stroke-width: 1.8;
+        stroke-linecap: round;
+        stroke-linejoin: round;
+        transition:
+          opacity 0.18s ease,
+          stroke 0.18s ease,
+          stroke-width 0.18s ease;
+      }
+
+      .edge[data-state="upcoming"] {
+        opacity: 0.14;
+      }
+
+      .edge[data-state="done"] {
+        opacity: 0.72;
+        stroke: #8eaad4;
+      }
+
+      .edge[data-state="active"] {
+        opacity: 1;
+        stroke: var(--accent);
+        stroke-width: 2.4;
+      }
+
+      .edge.tone-ok[data-state="active"] {
+        stroke: var(--ok);
+      }
+
+      .edge.tone-ok[data-state="done"] {
+        stroke: #6fb894;
+      }
+
+      .edge.tone-warn[data-state="active"] {
+        stroke: var(--warn);
+      }
+
+      .edge-label {
+        font-size: 11px;
+        font-weight: 550;
+        fill: #57544d;
+        transition:
+          opacity 0.18s ease,
+          fill 0.18s ease;
+      }
+
+      .edge-label[data-state="upcoming"] {
+        opacity: 0.16;
+      }
+
+      .edge-label[data-state="done"] {
+        opacity: 0.85;
+      }
+
+      .edge-label[data-state="active"] {
+        opacity: 1;
+        fill: var(--accent);
+        font-weight: 650;
+      }
+
+      .edge-label.tone-ok[data-state="active"] {
+        fill: var(--ok);
+      }
+
+      .edge-label.tone-warn[data-state="active"] {
+        fill: var(--warn);
+      }
+
+      .edge-dot {
+        fill: var(--accent);
+        opacity: 0;
+        transition: opacity 0.18s ease;
+      }
+
+      .edge-dot.tone-ok {
+        fill: var(--ok);
+      }
+
+      .edge-dot.tone-warn {
+        fill: var(--warn);
+      }
+
+      .edge-dot.visible {
+        opacity: 1;
+      }
+
+      /* Narration bar & step pills */
+      .stage-footer {
+        border-top: 1px solid var(--border);
+        background: #fcfbf8;
+        padding: 16px 20px;
+      }
+
+      .narration {
+        display: flex;
+        align-items: flex-start;
+        justify-content: space-between;
+        gap: 16px;
+        margin-bottom: 14px;
+      }
+
+      .narration-badge {
+        flex-shrink: 0;
+        font-size: 12px;
+        font-weight: 650;
+        color: var(--accent);
+        background: var(--accent-soft);
+        border: 1px solid var(--accent-border);
+        border-radius: 4px;
+        padding: 2px 9px;
+        margin-top: 2px;
+      }
+
+      .narration-badge.tone-ok {
+        color: var(--ok);
+        background: var(--ok-soft);
+        border-color: var(--ok-border);
+      }
+
+      .narration-badge.tone-warn {
+        color: var(--warn);
+        background: var(--warn-soft);
+        border-color: var(--warn-border);
+      }
+
+      .narration-body {
+        flex: 1;
+      }
+
+      .narration-title {
+        font-size: 15px;
+        font-weight: 650;
+        margin: 0 0 4px;
+        color: var(--text);
+      }
+
+      .narration-desc {
+        margin: 0;
+        font-size: 13.5px;
+        color: var(--text-secondary);
+        line-height: 1.62;
+      }
+
+      .step-rail {
+        display: flex;
+        gap: 6px;
+        flex-wrap: wrap;
+      }
+
+      .step-chip {
+        appearance: none;
+        border: 1px solid var(--border);
+        background: var(--surface);
+        color: var(--text-secondary);
+        font-family: var(--font-sans);
+        font-size: 12.5px;
+        padding: 6px 10px;
+        border-radius: var(--radius-sm);
+        cursor: pointer;
+        transition:
+          background 0.15s ease,
+          border-color 0.15s ease,
+          color 0.15s ease;
+      }
+
+      .step-chip:hover {
+        border-color: var(--border-strong);
+        color: var(--text);
+      }
+
+      .step-chip.is-done {
+        background: var(--surface-muted);
+        color: var(--text);
+      }
+
+      .step-chip.is-active {
+        background: var(--accent-soft);
+        border-color: var(--accent);
+        color: var(--accent);
+        font-weight: 600;
+      }
+
+      /* Tables */
+      .table-wrap {
+        overflow-x: auto;
+        border: 1px solid var(--border);
+        border-radius: var(--radius);
+        background: var(--surface);
+        margin-top: 16px;
+      }
+
+      table {
+        width: 100%;
+        border-collapse: collapse;
+        font-size: 13.5px;
+      }
+
+      th,
+      td {
+        text-align: left;
+        padding: 12px 15px;
+        border-bottom: 1px solid var(--border);
+        vertical-align: top;
+      }
+
+      thead th {
+        background: var(--surface-muted);
+        color: var(--text);
+        font-weight: 650;
+        font-size: 13px;
+        white-space: nowrap;
+      }
+
+      tbody tr:last-child td {
+        border-bottom: none;
+      }
+
+      td strong {
+        color: var(--text);
+        font-weight: 600;
+      }
+
+      /* Protocol Principles + Schema Tabs */
+      .principles-grid {
+        display: grid;
+        grid-template-columns: repeat(4, minmax(0, 1fr));
+        gap: 12px;
+        margin-bottom: 22px;
+      }
+
+      .principle-card {
+        background: var(--surface);
+        border: 1px solid var(--border);
+        border-radius: var(--radius);
+        padding: 15px 16px;
+      }
+
+      .principle-card h4 {
+        margin: 0 0 6px;
+        font-size: 14px;
+        font-weight: 650;
+        color: var(--text);
+      }
+
+      .principle-card p {
+        margin: 0;
+        font-size: 13px;
+        color: var(--text-secondary);
+        line-height: 1.6;
+      }
+
+      .schema-browser {
+        background: var(--surface);
+        border: 1px solid var(--border);
+        border-radius: var(--radius);
+        overflow: hidden;
+        margin-top: 16px;
+      }
+
+      .schema-tabs {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 4px;
+        padding: 10px 14px;
+        background: var(--surface-muted);
+        border-bottom: 1px solid var(--border);
+      }
+
+      .schema-tab {
+        appearance: none;
+        border: 1px solid transparent;
+        background: transparent;
+        color: var(--text-secondary);
+        font-family: var(--font-sans);
+        font-size: 13px;
+        font-weight: 550;
+        padding: 6px 12px;
+        border-radius: var(--radius-sm);
+        cursor: pointer;
+        transition:
+          background 0.15s ease,
+          border-color 0.15s ease,
+          color 0.15s ease;
+      }
+
+      .schema-tab:hover {
+        color: var(--text);
+        background: rgba(255, 255, 255, 0.7);
+      }
+
+      .schema-tab.active {
+        background: var(--surface);
+        border-color: var(--border-strong);
+        color: var(--accent);
+        font-weight: 650;
+      }
+
+      .schema-pane {
+        display: none;
+        padding: 18px 20px;
+      }
+
+      .schema-pane.active {
+        display: block;
+      }
+
+      .schema-note {
+        margin: 0 0 12px;
+        font-size: 13.5px;
+        color: var(--text-secondary);
+      }
+
+      .schema-pane .table-wrap {
+        margin-top: 10px;
+      }
+
+      .code-block {
+        margin: 14px 0 0;
+        padding: 14px 16px;
+        background: var(--bg);
+        border: 1px solid var(--border);
+        border-radius: var(--radius-sm);
+        font-size: 12.5px;
+        line-height: 1.6;
+        overflow-x: auto;
+        color: var(--text);
+      }
+
+      /* Branch switcher inside sequence diagram */
+      .branch-toggle {
+        display: inline-flex;
+        border: 1px solid var(--border-strong);
+        border-radius: var(--radius-sm);
+        overflow: hidden;
+        background: var(--surface);
+      }
+
+      .branch-toggle button {
+        appearance: none;
+        border: none;
+        background: transparent;
+        padding: 7px 11px;
+        font-family: var(--font-sans);
+        font-size: 12.5px;
+        color: var(--text-secondary);
+        cursor: pointer;
+      }
+
+      .branch-toggle button.active {
+        background: var(--accent-soft);
+        color: var(--accent);
+        font-weight: 600;
+      }
+
+      .branch-toggle button.active.warn {
+        background: var(--warn-soft);
+        color: var(--warn);
+      }
+
+      /* Three-step workbench preview */
+      .steps-row {
+        display: grid;
+        grid-template-columns: repeat(3, minmax(0, 1fr));
+        gap: 16px;
+        margin-bottom: 24px;
+      }
+
+      .step-card {
+        background: var(--surface);
+        border: 1px solid var(--border);
+        border-radius: var(--radius);
+        padding: 18px 20px;
+      }
+
+      .step-card-index {
+        font-size: 12px;
+        font-variant-numeric: tabular-nums;
+        color: var(--accent);
+        margin-bottom: 6px;
+        font-weight: 600;
+      }
+
+      .step-card h4 {
+        margin: 0 0 8px;
+        font-size: 15.5px;
+        font-weight: 650;
+      }
+
+      .step-card p {
+        margin: 0;
+        font-size: 13.5px;
+        color: var(--text-secondary);
+      }
+
+      /* Visual proof (Pareto + Scoreboard) */
+      .viz-grid {
+        display: grid;
+        grid-template-columns: 1.15fr 0.85fr;
+        gap: 18px;
+        margin-bottom: 28px;
+      }
+
+      .panel {
+        background: var(--surface);
+        border: 1px solid var(--border);
+        border-radius: var(--radius);
+        padding: 18px 20px;
+      }
+
+      .panel-head {
+        display: flex;
+        align-items: baseline;
+        justify-content: space-between;
+        gap: 12px;
+        margin-bottom: 12px;
+      }
+
+      .panel-head h4 {
+        margin: 0;
+        font-size: 14.5px;
+        font-weight: 650;
+      }
+
+      .panel-note {
+        font-size: 12px;
+        color: var(--text-muted);
+      }
+
+      .pareto-point {
+        cursor: pointer;
+      }
+
+      .pareto-readout {
+        margin-top: 10px;
+        padding: 10px 12px;
+        background: var(--bg);
+        border: 1px solid var(--border);
+        border-radius: var(--radius-sm);
+        font-size: 12.5px;
+        color: var(--text-secondary);
+      }
+
+      .pareto-readout strong {
+        color: var(--text);
+      }
+
+      .mini-table {
+        width: 100%;
+        border-collapse: collapse;
+        font-size: 13px;
+      }
+
+      .mini-table th,
+      .mini-table td {
+        padding: 9px 10px;
+        border-bottom: 1px solid var(--border);
+      }
+
+      .mini-table thead th {
+        background: var(--bg);
+        font-size: 12px;
+        color: var(--text-secondary);
+      }
+
+      .mini-table tbody tr:last-child td {
+        border-bottom: none;
+      }
+
+      .delta-up {
+        color: var(--ok);
+        font-weight: 650;
+        font-variant-numeric: tabular-nums;
+      }
+
+      .delta-warn {
+        color: var(--warn);
+        font-weight: 600;
+        font-variant-numeric: tabular-nums;
+      }
+
+      .case-matrix {
+        margin-top: 16px;
+        padding-top: 14px;
+        border-top: 1px solid var(--border);
+      }
+
+      .case-matrix-title {
+        font-size: 12.5px;
+        font-weight: 650;
+        color: var(--text);
+        margin-bottom: 8px;
+      }
+
+      .case-cells {
+        display: grid;
+        grid-template-columns: repeat(8, 1fr);
+        gap: 6px;
+      }
+
+      .case-cell {
+        text-align: center;
+        padding: 6px 4px;
+        border-radius: 5px;
+        font-variant-numeric: tabular-nums;
+        font-size: 11.5px;
+        border: 1px solid var(--border);
+        background: var(--bg);
+        color: var(--text-secondary);
+      }
+
+      .case-cell.up {
+        background: var(--ok-soft);
+        border-color: var(--ok-border);
+        color: var(--ok);
+        font-weight: 600;
+      }
+
+      .case-cell.same {
+        background: var(--surface-muted);
+        color: var(--text-secondary);
+      }
+
+      /* Roadmap */
+      .roadmap-grid {
+        display: grid;
+        grid-template-columns: repeat(4, minmax(0, 1fr));
+        gap: 14px;
+      }
+
+      .road-item {
+        background: var(--surface);
+        border: 1px solid var(--border);
+        border-radius: var(--radius);
+        padding: 16px 18px;
+      }
+
+      .road-item.current {
+        border-color: var(--accent-border);
+        background: var(--accent-soft);
+      }
+
+      .road-phase {
+        font-size: 11.5px;
+        font-variant-numeric: tabular-nums;
+        color: var(--accent);
+        font-weight: 650;
+        margin-bottom: 6px;
+      }
+
+      .road-item h4 {
+        margin: 0 0 6px;
+        font-size: 14.5px;
+        font-weight: 650;
+      }
+
+      .road-item p {
+        margin: 0;
+        font-size: 13px;
+        color: var(--text-secondary);
+        line-height: 1.6;
+      }
+
+      footer {
+        margin-top: 32px;
+        padding-top: 20px;
+        border-top: 1px solid var(--border);
+        font-size: 12.5px;
+        color: var(--text-muted);
+        display: flex;
+        justify-content: space-between;
+        gap: 12px;
+        flex-wrap: wrap;
+      }
+
+      @media (max-width: 920px) {
+        .scqa-grid,
+        .roadmap-grid,
+        .principles-grid {
+          grid-template-columns: repeat(2, minmax(0, 1fr));
+        }
+
+        .scqa-item {
+          border-bottom: 1px solid var(--border);
+        }
+
+        .steps-row,
+        .viz-grid {
+          grid-template-columns: 1fr;
+        }
+      }
+
+      @media (max-width: 600px) {
+        .scqa-grid,
+        .roadmap-grid,
+        .principles-grid {
+          grid-template-columns: 1fr;
+        }
+
+        .kbd-hint {
+          display: none;
+        }
+      }
+    </style>
+  </head>
+  <body>
+    <header class="topbar">
+      <div class="topbar-inner">
+        <a class="brand" href="#top">
+          <span>RSI API 架构设计与统一协议规范</span>
+          <span class="brand-tag">Design doc V2 · Protocol v1</span>
+        </a>
+        <nav class="nav-links" aria-label="章节导航">
+          <a href="#overview">核心结论</a>
+          <a href="#flow">全景闭环</a>
+          <a href="#protocol">统一协议规范</a>
+          <a href="#workbench">三步工作台</a>
+          <a href="#roadmap">落地路线</a>
+          <span class="kbd-hint"><kbd>←</kbd><kbd>→</kbd> 切换步骤</span>
+        </nav>
+      </div>
+    </header>
+
+    <main id="top" class="page">
+      <!-- Pyramid Top: Core Conclusion + SCQA -->
+      <div id="overview" class="hero">
+  <h1>让外部 Agent Harness 的 Skill 自进化可量化、可验证、可回退</h1>
+  <p class="thesis">
+    <strong>核心结论：</strong>让 AI 修改自己的 Skill 并不难，难的是证明改完更好，并且在信息不完整时仍能诚实地说清「看到了什么、缺了什么」。RSI API V2 把「日志沉淀 → 基准构建 → 离线优化 → 量化验证 → 安全回写」定义为一套跨 Harness 协议：一个外部 session 对应一条逻辑 trace；历史按 ID 拉取、运行中增量推送，两条路径以 <code>revision</code> 仲裁重复、乱序与旧快照；每次读取都带可见性与缺口；Skill 以完整目录包传输，验证凭证绑定候选包摘要；只有验证凭证处于放行态且无 <code>base_hashes</code> / 摘要冲突时，才允许写回。
+  </p>
+
+  <div class="scqa-grid">
+    <div class="scqa-item">
+      <div class="scqa-label"><span class="scqa-code">S</span><span>背景</span></div>
+      <p>Agent 表现依赖 Skill、Hook、指令文件等 Harness 配置；真实交互是构建评测尺子的原料。</p>
+    </div>
+    <div class="scqa-item">
+      <div class="scqa-label"><span class="scqa-code">C</span><span>冲突</span></div>
+      <p>黑盒自改缺少验证；来源常常只能提供部分信息，权限、策略、能力与离线状态都会造成缺口。把「没看到」当「没有」，后续结论全部失真。</p>
+    </div>
+    <div class="scqa-item">
+      <div class="scqa-label"><span class="scqa-code">Q</span><span>核心问题</span></div>
+      <p>如何用一套跨 Harness 协议，让采集、评测、优化、回写形成可验证、可回滚、可解释缺口的闭环？</p>
+    </div>
+    <div class="scqa-item is-answer">
+      <div class="scqa-label"><span class="scqa-code">A</span><span>协议方案</span></div>
+      <p>四根支柱：可验证闭环；双路径采集 + 版本化 <code>SessionSnapshot</code>；薄 Adapter + 能力/可见性声明；三步工作台 + 缺口可视化。</p>
+    </div>
+  </div>
+</div>
+
+      <!-- Section 1: End-to-End Interactive Architecture -->
+<section id="flow">
+        <div class="section-head">
+          <div class="section-num">01 / 自进化全流程设计</div>
+          <h2>从「黑盒盲改」升级为「双路径采集 + 验后上线」的完整闭环</h2>
+          <p class="section-lead">
+            图分三层：外部 Harness → Adapter（来源机器上的薄翻译层）→ 内部自进化平台（含 RSI 接收端、存储、Benchmark、优化与 Proof 闸门）；RSI 接收端属于内部平台，不是单独的第三层。历史按 ID <code>traces.pull</code> 纯读，运行中由 Adapter <code>traces.push</code> 增量推送，两条路径汇入同一 <code>rsi_*</code> 独立存储；离线优化后经 <code>VerificationProof</code> 闸门，才允许 <code>skills.push</code> 灰度回写。
+          </p>
+        </div>
+
+        <div class="stage" data-stepper="main">
+  <div class="stage-toolbar">
+    <div class="stage-title-group">
+      <span class="stage-title">V2 双路径架构 · 三层 6 步闭环演示</span>
+      <span class="step-counter" data-counter>步骤 0 / 6</span>
+    </div>
+    <div class="controls">
+      <button class="btn" type="button" data-action="prev">上一步</button>
+      <button class="btn btn-primary" type="button" data-action="next">下一步</button>
+      <button class="btn" type="button" data-action="play">自动播放</button>
+      <button class="btn" type="button" data-action="all">全览</button>
+      <button class="btn" type="button" data-action="reset">重置</button>
+    </div>
+  </div>
+  <div class="stage-canvas">
+    <svg viewBox="0 0 1120 520" data-prefix="m" role="img" aria-label="RSI API V2 双路径架构图">
+      <defs>
+        <marker id="m-arr-muted" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="6" markerHeight="6" orient="auto"><path d="M 1 2 L 8.5 5 L 1 8 z" fill="#8eaad4" /></marker>
+        <marker id="m-arr-active" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="6.5" markerHeight="6.5" orient="auto"><path d="M 1 2 L 8.5 5 L 1 8 z" fill="#2457a6" /></marker>
+        <marker id="m-arr-ok" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="6.5" markerHeight="6.5" orient="auto"><path d="M 1 2 L 8.5 5 L 1 8 z" fill="#1d744a" /></marker>
+        <marker id="m-arr-warn" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="6.5" markerHeight="6.5" orient="auto"><path d="M 1 2 L 8.5 5 L 1 8 z" fill="#b34926" /></marker>
+      </defs>
+
+      <rect class="svg-group-box" x="18" y="18" width="224" height="484" rx="10" />
+      <text class="svg-group-title" x="34" y="44">外部 Harness（Codex）</text>
+      <rect class="svg-group-box is-boundary" x="262" y="18" width="374" height="484" rx="10" />
+      <text class="svg-group-title" x="278" y="44">Adapter（外部 Harness 所在机器）</text>
+      <rect class="svg-group-box" x="656" y="18" width="446" height="484" rx="10" />
+      <text class="svg-group-title" x="672" y="44">内部自进化平台（RSI 接收端 + 工作台）</text>
+
+      <!-- edges -->
+      <path id="m-e-log-reader" class="edge" data-step="2" d="M 222 108 L 252 108 L 252 228 L 284 228" />
+      <text class="edge-label" data-step="2" x="228" y="150">历史</text>
+      <path id="m-e-hook-queue" class="edge" data-step="1" d="M 222 220 L 252 220 L 252 336 L 284 336" />
+      <text class="edge-label" data-step="1" x="228" y="280">登记变化</text>
+      <path id="m-e-queue-push" class="edge" data-step="2" d="M 454 336 L 676 336" />
+      <text class="edge-label" data-step="2" x="565" y="326" text-anchor="middle">delta / snapshot + revision</text>
+      <path id="m-e-push-store" class="edge" data-step="2" d="M 742 304 L 742 264" />
+      <path id="m-e-store-bench" class="edge" data-step="4" d="M 808 226 L 838 226 L 838 108 L 868 108" />
+      <text class="edge-label" data-step="4" x="830" y="170" text-anchor="middle">按 pin 读取</text>
+      <path id="m-e-platform-read" class="edge" data-step="2" d="M 656 96 L 636 96 L 636 114 L 454 114" stroke-dasharray="5 5" />
+      <text class="edge-label" data-step="2" x="640" y="104" text-anchor="middle">traces.list / pull（需入站可达）</text>
+      <path id="m-e-reader-read" class="edge" data-step="2" d="M 369 152 L 369 196" />
+      <path id="m-e-skill-read" class="edge" data-step="3" d="M 284 446 L 252 446 L 252 398 L 222 398" />
+      <path id="m-e-skill-write" class="edge tone-ok" data-step="6" d="M 284 446 L 252 446 L 252 398 L 222 398" />
+      <text class="edge-label" data-step="3" x="238" y="430" text-anchor="middle">读 v0 / 写 v1</text>
+      <path id="m-e-gate-push" class="edge tone-ok" data-step="6" d="M 868 448 L 838 448 L 838 446 L 454 446" />
+      <text class="edge-label" data-step="6" x="650" y="438" text-anchor="middle">skills.push（含 proof）</text>
+      <path id="m-e-gate-rollback" class="edge tone-warn" data-step="6" d="M 868 470 L 838 470 L 838 472 L 454 472" />
+      <text class="edge-label tone-warn" data-step="6" x="650" y="486" text-anchor="middle">rollback</text>
+      <path id="m-e-bench-opt" class="edge" data-step="4" d="M 975 140 L 975 188" />
+      <path id="m-e-opt-cand" class="edge" data-step="4" d="M 975 252 L 975 300" />
+      <path id="m-e-cand-gate" class="edge" data-step="5" d="M 975 364 L 975 412" />
+      <path id="m-e-bench-gate" class="edge" data-step="5" d="M 1082 140 L 1082 412" />
+      <text class="edge-label" data-step="5" x="1075" y="276" text-anchor="end">同一把尺子</text>
+
+      <g id="main-dots"></g>
+
+      <!-- external nodes -->
+      <g class="node" data-step="0" data-also="2">
+        <rect x="38" y="76" width="184" height="64" />
+        <text class="n-title" x="130" y="102" text-anchor="middle">原生日志 / 会话分片</text>
+        <text class="n-sub" x="130" y="121" text-anchor="middle">分片索引 + 行序</text>
+      </g>
+      <g class="node" data-step="0" data-also="1,2">
+        <rect x="38" y="188" width="184" height="64" />
+        <text class="n-title" x="130" y="214" text-anchor="middle">观察型 Hook（可选）</text>
+        <text class="n-sub" x="130" y="233" text-anchor="middle">只登记变化 · 空 stdout / exit 0</text>
+      </g>
+      <g class="node" data-step="0" data-also="3,6">
+        <rect x="38" y="348" width="184" height="100" />
+        <text class="n-title" x="130" y="380" text-anchor="middle">线上 Skill 目录</text>
+        <text class="n-sub" x="130" y="400" text-anchor="middle">Codex user / repo scope</text>
+        <text class="n-sub" x="130" y="418" text-anchor="middle">读 v0 · 写 v1 · rollback</text>
+      </g>
+
+      <!-- adapter nodes -->
+      <g class="node" data-step="1" data-also="2">
+        <rect x="284" y="76" width="170" height="76" />
+        <text class="n-title" x="369" y="103" text-anchor="middle">harness.info / hooks.*</text>
+        <text class="n-sub" x="369" y="122" text-anchor="middle">能力 · 可见性 · trust 状态</text>
+        <text class="n-sub" x="369" y="140" text-anchor="middle">traces.list / pull 入口</text>
+      </g>
+      <g class="node" data-step="2">
+        <rect x="284" y="196" width="170" height="64" />
+        <text class="n-title" x="369" y="222" text-anchor="middle">统一读取器</text>
+        <text class="n-sub" x="369" y="241" text-anchor="middle">19 种 ThreadItem → AMSP</text>
+      </g>
+      <g class="node" data-step="1" data-also="2">
+        <rect x="284" y="304" width="170" height="64" />
+        <text class="n-title" x="369" y="330" text-anchor="middle">本地持久队列</text>
+        <text class="n-sub" x="369" y="349" text-anchor="middle">未 ack 不清空 · 字节原样</text>
+      </g>
+      <g class="node" data-step="3" data-also="6">
+        <rect x="284" y="408" width="170" height="76" />
+        <text class="n-title" x="369" y="435" text-anchor="middle">skills.pull / push / rollback</text>
+        <text class="n-sub" x="369" y="454" text-anchor="middle">完整目录包 · base_hashes</text>
+        <text class="n-sub" x="369" y="472" text-anchor="middle">proof · trust_state</text>
+      </g>
+
+      <!-- rsi nodes -->
+      <g class="node" data-step="2" data-also="4">
+        <rect x="676" y="188" width="132" height="76" />
+        <text class="n-title" x="742" y="215" text-anchor="middle">rsi_* 独立存储</text>
+        <text class="n-sub" x="742" y="234" text-anchor="middle">(source_id, session_id)</text>
+        <text class="n-sub" x="742" y="252" text-anchor="middle">revision · pin</text>
+      </g>
+      <g class="node" data-step="2">
+        <rect x="676" y="304" width="132" height="64" />
+        <text class="n-title" x="742" y="330" text-anchor="middle">traces.push</text>
+        <text class="n-sub" x="742" y="349" text-anchor="middle">事务后 ack</text>
+      </g>
+
+      <!-- platform nodes -->
+      <g class="node" data-step="4" data-also="5">
+        <rect x="868" y="76" width="214" height="64" />
+        <text class="n-title" x="975" y="102" text-anchor="middle">Benchmark + pin</text>
+        <text class="n-sub" x="975" y="121" text-anchor="middle">冻结 revision · content hash</text>
+      </g>
+      <g class="node" data-step="4">
+        <rect x="868" y="188" width="214" height="64" />
+        <text class="n-title" x="975" y="214" text-anchor="middle">离线优化</text>
+        <text class="n-sub" x="975" y="233" text-anchor="middle">v0 → v1 · 临时 CODEX_HOME</text>
+      </g>
+      <g class="node" data-step="4" data-also="5">
+        <rect x="868" y="300" width="214" height="64" />
+        <text class="n-title" x="975" y="326" text-anchor="middle">候选 v1</text>
+        <text class="n-sub" x="975" y="345" text-anchor="middle">candidate_hashes</text>
+      </g>
+      <g class="node" data-step="5" data-also="6">
+        <rect x="868" y="412" width="214" height="72" />
+        <text class="n-title" x="975" y="440" text-anchor="middle">Proof 闸门</text>
+        <text class="n-sub" x="975" y="459" text-anchor="middle">approved / override</text>
+        <text class="n-sub" x="975" y="477" text-anchor="middle">coverage · regressions</text>
+      </g>
+    </svg>
+  </div>
+  <div class="stage-footer">
+    <div class="narration">
+      <span class="narration-badge" data-badge>准备就绪</span>
+      <div class="narration-body">
+        <p class="narration-title" data-title></p>
+        <p class="narration-desc" data-desc></p>
+      </div>
+    </div>
+    <div class="step-rail" data-rail></div>
+  </div>
+</div>
+      </section>
+
+            <!-- Section 2: Unified Protocol Specification -->
+<section id="protocol">
+        <div class="section-head">
+          <div class="section-num">02 / RSI API 统一协议规范 (v1)</div>
+          <h2>标准方法命名规则、全量核心字段定义与多系统适配契约</h2>
+          <p class="section-lead">
+            以 <code>SessionSnapshot</code> 为唯一会话单位，用 <code>revision</code> + 两个摘要仲裁新旧，用 <code>visibility</code>/<code>gaps</code>/<code>sync</code> 描述证据边界，用 <code>VerificationProof</code> 约束写回。
+          </p>
+        </div>
+
+        <div class="principles-grid">
+          <div class="principle-card">
+            <h4>双路径采集、离线不丢</h4>
+            <p>历史按 ID <code>traces.pull</code> 纯读，运行中由 Adapter <code>traces.push</code> 增量推送；Hook 只登记变化，不阻塞外部 Harness。</p>
+          </div>
+          <div class="principle-card">
+            <h4>一个 session 一条 trace</h4>
+            <p>身份是 <code>(source_id, session_id)</code>，版本由 Adapter 单调分配；重复、乱序与旧快照都用同一套 revision 规则仲裁。</p>
+          </div>
+          <div class="principle-card">
+            <h4>可见性与缺口显式</h4>
+            <p>五域四态；不可见就省略字段并记 <code>gaps</code>，<code>unknown</code> 不得写成 0 或空数组；交付延迟只放 <code>sync</code>。</p>
+          </div>
+          <div class="principle-card">
+            <h4>验证入契约、瘦 Adapter</h4>
+            <p><code>skills.push</code> 必带 <code>verification</code> + <code>base_hashes</code>；Adapter 只验放行态、候选摘要与冲突，复杂打分留在平台侧。</p>
+          </div>
+        </div>
+
+        <h3>标准方法总表（9 个核心方法 + 2 个可选扩展）</h3>
+        <div class="table-wrap">
+          <table>
+            <thead>
+              <tr>
+                <th>类别</th>
+                <th>标准方法名</th>
+                <th>提供方</th>
+                <th>HTTP 路由（统一前缀 <code>/api/rsi/v1</code>）</th>
+                <th>职责说明</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr>
+                <td><strong>能力发现</strong></td>
+                <td><code>harness.info</code></td>
+                <td>Adapter</td>
+                <td><code>GET /info</code></td>
+                <td>声明来源类型、<code>source_id</code>、连接方向、能力位与默认可见性</td>
+              </tr>
+              <tr>
+                <td><strong>Hook 管理</strong></td>
+                <td><code>hooks.install</code> / <code>status</code> / <code>uninstall</code></td>
+                <td>Adapter</td>
+                <td><code>POST /hooks</code> · <code>GET /hooks/status</code> · <code>DELETE /hooks/:hook_id</code></td>
+                <td>挂载、健康检查与卸载；四态 + <code>trust_status</code>/<code>current_hash</code></td>
+              </tr>
+              <tr>
+                <td><strong>轨迹读取</strong></td>
+                <td><code>traces.pull</code></td>
+                <td>Adapter</td>
+                <td><code>POST /traces/pull</code></td>
+                <td>只传 <code>session_id</code>，返回一个完整 <code>SessionSnapshot</code>；纯读</td>
+              </tr>
+              <tr>
+                <td><strong>轨迹发现</strong></td>
+                <td><code>traces.list</code></td>
+                <td>Adapter</td>
+                <td><code>POST /traces/list</code></td>
+                <td>按 <code>from</code>/<code>to</code> + <code>page</code>/<code>page_size</code> 发现会话摘要</td>
+              </tr>
+              <tr>
+                <td><strong>轨迹写入</strong></td>
+                <td><code>traces.push</code></td>
+                <td><strong>RSI 接收端</strong></td>
+                <td><code>POST /traces/push</code></td>
+                <td><code>delta</code>/<code>snapshot</code> 推送；事务提交后 ack</td>
+              </tr>
+              <tr>
+                <td><strong>Skill 拉取</strong></td>
+                <td><code>skills.pull</code></td>
+                <td>Adapter</td>
+                <td><code>POST /skills/pull</code></td>
+                <td>拉完整 <code>SkillBundle[]</code> + <code>content_sha256</code>，锁定基线 v0</td>
+              </tr>
+              <tr>
+                <td><strong>Skill 推送</strong></td>
+                <td><code>skills.push</code></td>
+                <td>Adapter</td>
+                <td><code>POST /skills/push</code></td>
+                <td>校验 <code>verification</code>/<code>base_hashes</code>/候选摘要后备份并写入</td>
+              </tr>
+              <tr>
+                <td><strong>Skill 回滚（可选）</strong></td>
+                <td><code>skills.rollback</code></td>
+                <td>Adapter</td>
+                <td><code>POST /skills/rollback</code></td>
+                <td>按 <code>backup_id</code> + <code>expected_current_hashes</code> 恢复或删除</td>
+              </tr>
+              <tr>
+                <td><strong>真机复核（可选）</strong></td>
+                <td><code>eval.run</code></td>
+                <td>Adapter</td>
+                <td><code>POST /eval/run</code></td>
+                <td>驱动目标 Harness 跑一个用例；返回 <code>session_id</code>，历史走 <code>traces.pull</code></td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+        <p class="schema-note" style="margin-top: 12px">
+          <strong>鉴权约定：</strong>ingest token 只写本连接 trace；control token 读 trace/skill，可选 <code>skills:write</code>、<code>eval:run</code>、<code>hooks:read</code>、<code>hooks:manage</code>；不复用管理员 token 或单个 Agent API key。
+        </p>
+
+        <h3>核心数据模型、错误码与可选扩展速查（点击切换）</h3>
+        <div class="schema-browser" data-tabs="schema">
+          <div class="schema-tabs" role="tablist" aria-label="协议对象分类">
+            <button class="schema-tab active" type="button" data-tab="info">1. HarnessInfo</button>
+            <button class="schema-tab" type="button" data-tab="hook">2. Hook 模型</button>
+            <button class="schema-tab" type="button" data-tab="trace">3. SessionSnapshot</button>
+            <button class="schema-tab" type="button" data-tab="skill">4. SkillBundle &amp; Push</button>
+            <button class="schema-tab" type="button" data-tab="verify">5. VerificationProof</button>
+            <button class="schema-tab" type="button" data-tab="error">6. RsiError 错误码</button>
+            <button class="schema-tab" type="button" data-tab="eval">可选: eval.run</button>
+          </div>
+
+          <div class="schema-pane active" data-pane="info">
+            <p class="schema-note"><code>harness.info</code> 在接入握手时调用，声明来源能力、连接方向与默认可见性。</p>
+            <div class="table-wrap">
+              <table>
+                <thead><tr><th>字段名</th><th>类型</th><th>必填</th><th>说明</th></tr></thead>
+                <tbody>
+                  <tr><td><code>protocol_version</code></td><td><code>"v1"</code></td><td>是</td><td>协议版本，与路径 <code>/api/rsi/v1</code> 一致</td></tr>
+                  <tr><td><code>source_id</code></td><td><code>string</code></td><td>是</td><td>Adapter 稳定标识；机器 + Harness home + profile，跨重启不变</td></tr>
+                  <tr><td><code>harness_type</code></td><td><code>"codex" | "claude_code" | "opencode" | "penguin" | "custom"</code></td><td>是</td><td>来源类型</td></tr>
+                  <tr><td><code>connection_modes</code></td><td><code>Array&lt;"push" | "pull"&gt;</code></td><td>是</td><td>两项独立，可同时声明；仅出站时只有 <code>push</code></td></tr>
+                  <tr><td><code>access_level</code></td><td><code>"white_box" | "gray_box" | "black_box"</code></td><td>是</td><td>层级摘要；事实以 <code>capabilities</code> 为准</td></tr>
+                  <tr><td><code>capabilities</code></td><td><code>object</code></td><td>是</td><td>traces/skills/hooks/eval 逐项能力；skills 含 <code>scopes</code>/<code>writable</code></td></tr>
+                  <tr><td><code>default_visibility</code></td><td><code>object</code></td><td>是</td><td>五域默认可见性；每次快照可更弱，不能更强</td></tr>
+                </tbody>
+              </table>
+            </div>
+          </div>
+
+          <div class="schema-pane" data-pane="hook">
+            <p class="schema-note">Hook 四态显式；<code>trust_status</code> 是来源事实，<code>pending_trust</code> 是 RSI 协议状态。</p>
+            <div class="table-wrap">
+              <table>
+                <thead><tr><th>对象 / 字段</th><th>类型</th><th>必填</th><th>说明</th></tr></thead>
+                <tbody>
+                  <tr><td><code>hooks.install.hook_id</code></td><td><code>string</code></td><td>条件</td><td>可重试调用方必须提供；省略时按 <code>(connection, agent_id, events)</code> 生成确定性 id</td></tr>
+                  <tr><td><code>hooks.install.events</code></td><td><code>Array&lt;string&gt;</code></td><td>是</td><td><code>session_start</code>/<code>user_prompt</code>/<code>pre_tool_use</code>/<code>post_tool_use</code>/<code>stop</code>/<code>interrupt</code>/<code>pre_compact</code>/<code>post_compact</code>/<code>session_end</code>/<code>subagent_start</code>/<code>subagent_stop</code></td></tr>
+                  <tr><td><code>hooks.install.delivery</code></td><td><code>{mode: "native_log" | "local_buffer", buffer_dir?}</code></td><td>是</td><td><code>native_log</code> 只记去哪儿读；<code>local_buffer</code> 先落盘再推送</td></tr>
+                  <tr><td><code>HookStatus.status</code></td><td><code>"not_installed" | "pending_trust" | "active" | "broken"</code></td><td>是</td><td>四态；<code>pending_trust</code> 需要人工信任</td></tr>
+                  <tr><td><code>HookStatus.trust_status</code></td><td><code>"managed" | "untrusted" | "trusted" | "modified"</code></td><td>否</td><td>来源的 trust 事实；与 <code>pending_trust</code> 不互相替代</td></tr>
+                  <tr><td><code>HookStatus.current_hash</code></td><td><code>string</code></td><td>否</td><td>当前 Hook 定义摘要；变化回到 <code>pending_trust</code></td></tr>
+                  <tr><td><code>HookStatus.installed_paths</code></td><td><code>string[]</code></td><td>是</td><td>来源机器上被修改的配置路径</td></tr>
+                  <tr><td><code>HookStatus.pending_count</code></td><td><code>number</code></td><td>否</td><td>本地缓冲中尚未 ack 的估算数量；不是完整性证明</td></tr>
+                  <tr><td><code>DeliveryStatus.pending_unit</code></td><td><code>"revision" | "push_batch" | "turn"</code></td><td>是</td><td>默认 <code>push_batch</code>；与 <code>SyncState</code> 分开</td></tr>
+                  <tr><td><code>DeliveryStatus.source_revision</code></td><td><code>integer</code></td><td>是</td><td>Adapter 当前最新 revision</td></tr>
+                </tbody>
+              </table>
+            </div>
+          </div>
+
+          <div class="schema-pane" data-pane="trace">
+            <p class="schema-note"><code>traces.pull</code> 只传 <code>session_id</code>；<code>traces.push</code> 由 RSI 接收端提供，<code>delta</code> 只追加精确后缀，<code>snapshot</code> 表达完整替换。</p>
+            <div class="table-wrap">
+              <table>
+                <thead><tr><th>字段名</th><th>类型</th><th>必填</th><th>说明</th></tr></thead>
+                <tbody>
+                  <tr><td><code>session_id</code></td><td><code>string</code></td><td>是</td><td>来源原生 ID，opaque；同一 <code>source_id</code> 内唯一</td></tr>
+                  <tr><td><code>source_id</code></td><td><code>string</code></td><td>是</td><td>内部键 <code>(source_id, session_id)</code></td></tr>
+                  <tr><td><code>revision</code></td><td><code>integer</code></td><td>是</td><td>Adapter 单调分配并跨重启持久化</td></tr>
+                  <tr><td><code>content_sha256</code></td><td><code>string</code></td><td>是</td><td>有效可见 records 的 JCS 摘要</td></tr>
+                  <tr><td><code>metadata_sha256</code></td><td><code>string</code></td><td>是</td><td>固定元数据字段集摘要；幂等键的一半</td></tr>
+                  <tr><td><code>records</code></td><td><code>AmspRecord[]</code></td><td>是</td><td>按分片索引 + 行序的可见记录；完整 <code>session_meta</code> 保留</td></tr>
+                  <tr><td><code>visibility</code></td><td><code>object</code></td><td>是</td><td>messages/tool_calls/skill_usage/subagents/raw_log 五域</td></tr>
+                  <tr><td><code>gaps</code></td><td><code>Gap[]</code></td><td>否</td><td>内容/授权缺口；<code>partial</code> 必带</td></tr>
+                  <tr><td><code>sync</code></td><td><code>SyncState</code></td><td>否</td><td>只由 RSI 填写；交付延迟不写 <code>gaps</code></td></tr>
+                  <tr><td><code>active_skills</code> / <code>skill_evidence</code></td><td><code>string[]</code> / <code>SkillEvidence[]</code></td><td>否</td><td>只收已加载/有使用证据；安装清单不算</td></tr>
+                  <tr><td><code>child_sessions</code></td><td><code>ChildRef[]</code></td><td>否</td><td>只列直接子会话；不可读保留 <code>readable:false</code> + 原因</td></tr>
+                  <tr><td><code>raw_path</code></td><td><code>string[]</code></td><td>否</td><td>来源机器路径；RSI 永不打开</td></tr>
+                </tbody>
+              </table>
+            </div>
+          </div>
+
+          <div class="schema-pane" data-pane="skill">
+            <p class="schema-note">SkillBundle 是完整目录快照；协议 v1 只支持 <code>kind:"skill"</code>、单包 <code>merge</code>。写入前必须校验 proof + base_hashes + 候选摘要。</p>
+            <div class="table-wrap">
+              <table>
+                <thead><tr><th>字段名</th><th>类型</th><th>必填</th><th>说明</th></tr></thead>
+                <tbody>
+                  <tr><td><code>name</code></td><td><code>string</code></td><td>是</td><td>目录名与身份；<code>^[A-Za-z0-9_-]+$</code></td></tr>
+                  <tr><td><code>kind</code></td><td><code>"skill"</code></td><td>是</td><td>v1 不支持 instruction bundle</td></tr>
+                  <tr><td><code>content_sha256</code></td><td><code>string</code></td><td>是</td><td>完整目录包摘要；Adapter 从 <code>files[]</code> 重算</td></tr>
+                  <tr><td><code>files</code></td><td><code>Array&lt;{rel_path, encoding, content}&gt;</code></td><td>是</td><td>必须含根 <code>SKILL.md</code>；保留 scripts/references 子目录</td></tr>
+                  <tr><td><code>skills.push.request_id</code></td><td><code>string</code></td><td>是</td><td>幂等键；同 id 不同 payload 返回 <code>409 request_id_conflict</code></td></tr>
+                  <tr><td><code>base_hashes</code></td><td><code>Record&lt;string, string | "absent"&gt;</code></td><td>是</td><td>覆盖每个 <code>name</code>；<code>"absent"</code> 表示拉取时不存在</td></tr>
+                  <tr><td><code>verification</code></td><td><code>VerificationProof</code></td><td>是</td><td>放行态 + 候选摘要 + target + coverage</td></tr>
+                  <tr><td><code>trust_state</code></td><td><code>"active" | "pending_trust" | "rejected"</code></td><td>是（响应）</td><td><code>applied</code> 是写入；<code>trust_state</code> 是生效</td></tr>
+                  <tr><td><code>backup_id</code></td><td><code>string</code></td><td>条件</td><td>写入前生成；<code>backup_before_write=false</code> 时禁用回滚</td></tr>
+                </tbody>
+              </table>
+            </div>
+          </div>
+
+          <div class="schema-pane" data-pane="verify">
+            <p class="schema-note">Proof 是写回的审计凭证；Adapter 只校验结构与放行态，不重跑评测。自动放行要求覆盖 predicate 与 runs 对称，否则只能 <code>override_by_user</code>。</p>
+            <div class="table-wrap">
+              <table>
+                <thead><tr><th>字段名</th><th>类型</th><th>必填</th><th>说明</th></tr></thead>
+                <tbody>
+                  <tr><td><code>target</code></td><td><code>{agent_id, source_id, harness_type}</code></td><td>是</td><td>凭证绑定的目标；与连接不一致 422</td></tr>
+                  <tr><td><code>proof_sha256</code></td><td><code>string</code></td><td>是</td><td>proof 去自身后的 JCS 摘要</td></tr>
+                  <tr><td><code>benchmark_content_sha256</code></td><td><code>string</code></td><td>是</td><td>尺子内容摘要；两侧必须同值</td></tr>
+                  <tr><td><code>baseline</code> / <code>candidate</code></td><td><code>ProofSide</code></td><td>是</td><td>各带 <code>evaluation_id</code>、<code>bundle_sha256</code>、<code>metrics</code>、<code>runs_per_case</code>、<code>data_coverage</code></td></tr>
+                  <tr><td><code>delta</code></td><td><code>{score, cost_usd?, duration_ms?}</code></td><td>是</td><td>candidate − baseline</td></tr>
+                  <tr><td><code>gate_policy</code></td><td><code>"score_strict" | "pareto"</code></td><td>是</td><td>默认 <code>score_strict</code></td></tr>
+                  <tr><td><code>pareto_improved</code></td><td><code>boolean</code></td><td>是</td><td>每个可比维度不差且至少一项严格更好</td></tr>
+                  <tr><td><code>regressions</code></td><td><code>RegressionEntry[]</code></td><td>是</td><td>逐题回归数组，不是计数</td></tr>
+                  <tr><td><code>gate_decision</code></td><td><code>"approved" | "override_by_user"</code></td><td>是</td><td>只有这两个值放行</td></tr>
+                  <tr><td><code>override</code></td><td><code>object | null</code></td><td>条件</td><td><code>{approved_by, approved_at, reason, acknowledged_regressions, proof_sha256}</code></td></tr>
+                  <tr><td><code>candidate_hashes</code></td><td><code>Record&lt;string,string&gt;</code></td><td>是</td><td>名称→候选包摘要；键集合等于 <code>skills[].name</code></td></tr>
+                </tbody>
+              </table>
+            </div>
+          </div>
+
+          <div class="schema-pane" data-pane="error">
+            <p class="schema-note">错误信封 <code>{error:{code,message,phase,retryable,repair_hint,details}}</code>；错误码闭合，一码固定一个 HTTP 状态。</p>
+            <div class="table-wrap">
+              <table>
+                <thead><tr><th>阶段</th><th>错误码</th><th>HTTP</th><th>恢复方向</th></tr></thead>
+                <tbody>
+                  <tr><td>通用</td><td><code>invalid_request</code> / <code>unauthorized</code></td><td>400 / 401</td><td>修请求或凭据</td></tr>
+                  <tr><td>通用</td><td><code>permission_denied</code> / <code>unsupported_capability</code></td><td>403 / 501</td><td>补 scope 或接受降级</td></tr>
+                  <tr><td>pull</td><td><code>session_not_found</code> / <code>session_unreadable</code> / <code>source_unavailable</code></td><td>404 / 403 / 503</td><td>核对 ID、重新授权或等待来源恢复</td></tr>
+                  <tr><td>pull</td><td><code>normalization_failed</code> / <code>unsupported_data</code></td><td>422 / 422</td><td>升级 Adapter 或记录缺口</td></tr>
+                  <tr><td>push</td><td><code>revision_gap</code> / <code>revision_conflict</code> / <code>snapshot_stale</code></td><td>409</td><td>补拉、重建 delta 或忽略旧快照</td></tr>
+                  <tr><td>push</td><td><code>request_id_conflict</code> / <code>revision_pinned</code></td><td>409</td><td>换 request_id 或取消 pin</td></tr>
+                  <tr><td>hook</td><td><code>hook_trust_pending</code> / <code>hook_write_denied</code> / <code>hook_config_corrupted</code></td><td>409 / 403 / 500</td><td>人工信任、补权限或修配置</td></tr>
+                  <tr><td>skill</td><td><code>skill_invalid_format</code> / <code>skill_conflict_detected</code> / <code>verification_gate_failed</code></td><td>422 / 409 / 422</td><td>重打包、人工合并或补放行</td></tr>
+                  <tr><td>skill</td><td><code>target_write_denied</code> / <code>backup_not_found</code> / <code>rollback_failed</code></td><td>403 / 404 / 500</td><td>补权限、改用完整快照或人工核查</td></tr>
+                </tbody>
+              </table>
+            </div>
+          </div>
+
+          <div class="schema-pane" data-pane="eval">
+            <p class="schema-note">可选扩展；当 <code>capabilities.eval.run</code> 为真时启用。响应不返回 trace，历史仍走 <code>traces.pull(session_id)</code>。</p>
+            <div class="table-wrap">
+              <table>
+                <thead><tr><th>方向</th><th>字段</th><th>类型</th><th>说明</th></tr></thead>
+                <tbody>
+                  <tr><td>请求</td><td><code>case_id</code> / <code>prompt</code> / <code>timeout_s</code></td><td><code>string</code> / <code>string</code> / <code>number</code></td><td>一个评测用例；工作区文件可选</td></tr>
+                  <tr><td>请求</td><td><code>candidate_skills</code></td><td><code>SkillBundle[]</code></td><td>隔离环境中安装的候选包</td></tr>
+                  <tr><td>响应</td><td><code>status</code></td><td><code>"completed" | "failed" | "timeout"</code></td><td>执行状态</td></tr>
+                  <tr><td>响应</td><td><code>session_id</code></td><td><code>string</code></td><td>评测会话；用 <code>traces.pull</code> 读取</td></tr>
+                  <tr><td>响应</td><td><code>duration_ms</code> / <code>cost_usd?</code></td><td><code>number</code></td><td>耗时与成本</td></tr>
+                </tbody>
+              </table>
+            </div>
+          </div>
+        </div>
+
+        <h3>Skill 跨系统传输与校验流转（分步演示）</h3>
+        <div class="stage" data-stepper="transfer">
+  <div class="stage-toolbar">
+    <div class="stage-title-group">
+      <span class="stage-title">harness.info → skills.pull → Proof → skills.push / rollback</span>
+      <span class="step-counter" data-counter>步骤 1 / 5</span>
+    </div>
+    <div class="controls">
+      <div class="branch-toggle" role="group" aria-label="推送分支切换">
+        <button type="button" class="active" data-branch="ok">分支: 正常通过</button>
+        <button type="button" data-branch="conflict">分支: 409 冲突拦截</button>
+      </div>
+      <button class="btn" type="button" data-action="prev">上一步</button>
+      <button class="btn btn-primary" type="button" data-action="next">下一步</button>
+      <button class="btn" type="button" data-action="play">自动播放</button>
+      <button class="btn" type="button" data-action="all">全览</button>
+    </div>
+  </div>
+  <div class="stage-canvas">
+    <svg viewBox="0 0 960 368" data-prefix="t" role="img" aria-label="Skill 跨系统传输与校验时序图">
+      <defs>
+        <marker id="t-arr-muted" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="6" markerHeight="6" orient="auto"><path d="M 1 2 L 8.5 5 L 1 8 z" fill="#8eaad4" /></marker>
+        <marker id="t-arr-active" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="6.5" markerHeight="6.5" orient="auto"><path d="M 1 2 L 8.5 5 L 1 8 z" fill="#2457a6" /></marker>
+        <marker id="t-arr-ok" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="6.5" markerHeight="6.5" orient="auto"><path d="M 1 2 L 8.5 5 L 1 8 z" fill="#1d744a" /></marker>
+        <marker id="t-arr-warn" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="6.5" markerHeight="6.5" orient="auto"><path d="M 1 2 L 8.5 5 L 1 8 z" fill="#b34926" /></marker>
+      </defs>
+      <line x1="160" y1="64" x2="160" y2="348" stroke="#dedad0" stroke-width="1.5" stroke-dasharray="5 5" />
+      <line x1="480" y1="64" x2="480" y2="348" stroke="#c8d6eb" stroke-width="1.5" stroke-dasharray="5 5" />
+      <line x1="800" y1="64" x2="800" y2="348" stroke="#dedad0" stroke-width="1.5" stroke-dasharray="5 5" />
+      <g class="node" data-step="0"><rect x="66" y="18" width="188" height="44" /><text class="n-title" x="160" y="45" text-anchor="middle">外部 Harness</text></g>
+      <g class="node" data-step="0"><rect x="386" y="18" width="188" height="44" /><text class="n-title" x="480" y="45" text-anchor="middle">Adapter（来源机器）</text></g>
+      <g class="node" data-step="0"><rect x="706" y="18" width="188" height="44" /><text class="n-title" x="800" y="45" text-anchor="middle">内部自进化平台</text></g>
+
+      <path id="t-e-1a" class="edge" data-step="1" d="M 792 98 L 488 98" />
+      <path id="t-e-1b" class="edge" data-step="1" d="M 472 98 L 168 98" />
+      <path id="t-e-1c" class="edge" data-step="1" d="M 168 124 L 792 124" />
+      <text class="edge-label" data-step="1" x="640" y="90" text-anchor="middle">1. harness.info + skills.pull</text>
+      <text class="edge-label" data-step="1" x="320" y="90" text-anchor="middle">读 user / repo 可读作用域</text>
+      <text class="edge-label" data-step="1" x="480" y="117" text-anchor="middle">SkillBundle[] + content_sha256 → 锁定 v0</text>
+
+      <g class="node" data-step="2">
+        <rect x="650" y="144" width="298" height="52" />
+        <text class="n-title" x="799" y="166" text-anchor="middle">2. 离线优化 + VerificationProof</text>
+        <text class="n-sub" x="799" y="184" text-anchor="middle">benchmark_content_sha256 · runs · coverage</text>
+      </g>
+
+      <path id="t-e-3a" class="edge" data-step="3" d="M 792 222 L 488 222" />
+      <path id="t-e-3b" class="edge" data-step="3" d="M 472 222 L 168 222" />
+      <text class="edge-label" data-step="3" x="640" y="214" text-anchor="middle">3. skills.push(v1, request_id, base_hashes, proof)</text>
+      <text class="edge-label" data-step="3" x="320" y="214" text-anchor="middle">重算摘要；校验 proof / target / coverage</text>
+
+      <g data-branch-group="ok">
+        <path id="t-e-4a-ok" class="edge tone-ok" data-step="4" d="M 472 254 L 168 254" />
+        <path id="t-e-4b-ok" class="edge tone-ok" data-step="4" d="M 168 282 L 792 282" />
+        <text class="edge-label tone-ok" data-step="4" x="320" y="246" text-anchor="middle">4. staging → backup_id → 整目录替换</text>
+        <text class="edge-label tone-ok" data-step="4" x="480" y="274" text-anchor="middle">返回 bundle_hashes + trust_state → 观察 traces.*</text>
+      </g>
+      <g data-branch-group="conflict" style="display: none">
+        <path id="t-e-4-cf" class="edge tone-warn" data-step="4" d="M 168 268 L 792 268" />
+        <text class="edge-label tone-warn" data-step="4" x="480" y="259" text-anchor="middle">4. 409 skill_conflict_detected / request_id_conflict → 拦截并返回 diff</text>
+      </g>
+
+      <path id="t-e-5a" class="edge tone-warn" data-step="5" d="M 792 326 L 168 326" />
+      <text class="edge-label tone-warn" data-step="5" x="480" y="317" text-anchor="middle">5. skills.rollback(backup_id, expected_current_hashes) → already_restored</text>
+      <g id="transfer-dots"></g>
+    </svg>
+  </div>
+  <div class="stage-footer">
+    <div class="narration">
+      <span class="narration-badge" data-badge>步骤 1</span>
+      <div class="narration-body">
+        <p class="narration-title" data-title></p>
+        <p class="narration-desc" data-desc></p>
+      </div>
+    </div>
+    <div class="step-rail" data-rail></div>
+  </div>
+</div>
+      </section>
+
+            <!-- Section 3: Workbench, Visual Verification & Dual Error Recovery -->
+<section id="workbench">
+        <div class="section-head">
+          <div class="section-num">03 / 自进化工作台迭代计划</div>
+          <h2>三步完成进化，效果可见、异常可修</h2>
+          <p class="section-lead">
+            工作台把复杂流程收敛为递进式三步：先接入与沉淀，再出题与评估，最后离线优化与校验上线。所有图表都先展示证据边界，再允许下一步；失败统一以 <code>RsiError</code> 触达人与 Agent。
+          </p>
+        </div>
+
+        <div class="steps-row">
+          <div class="step-card">
+            <div class="step-card-index">STEP 01</div>
+            <h4>接入与沉淀数据</h4>
+            <p>
+              <code>harness.info</code> 读取能力与可见性；有历史先 <code>traces.list</code> / <code>traces.pull</code>；需要运行中更新再 <code>hooks.install</code>，并用 <code>traces.push</code> 增量入库。
+            </p>
+          </div>
+          <div class="step-card">
+            <div class="step-card-index">STEP 02</div>
+            <h4>出题与评估</h4>
+            <p>
+              在 <code>rsi-workbench</code> 的「出题」中生成或导入 Benchmark，在「评估」中取得基线；冻结 <code>(source_id, session_id, revision, content_sha256)</code> 并 pin。
+            </p>
+          </div>
+          <div class="step-card">
+            <div class="step-card-index">STEP 03</div>
+            <h4>优化与校验上线</h4>
+            <p>
+              <code>skills.pull</code> 备份 v0 后离线迭代，生成 <code>VerificationProof</code>；通过覆盖 predicate 与 runs 对称后，<code>skills.push</code> 灰度写入，异常 <code>skills.rollback</code>。
+            </p>
+          </div>
+        </div>
+
+        <h3>结果可视化示意：为什么不能只看单一平均分</h3>
+        <div class="viz-grid">
+          <div class="panel">
+            <div class="panel-head">
+              <h4>帕累托前沿图（得分 vs 平均耗时）</h4>
+              <span class="panel-note">点击或悬停数据点查看判定理由</span>
+            </div>
+            <svg viewBox="0 0 480 230" role="img" aria-label="帕累托前沿示意图">
+              <line x1="54" y1="24" x2="54" y2="190" stroke="#cfc9bc" stroke-width="1.2" />
+              <line x1="54" y1="190" x2="454" y2="190" stroke="#cfc9bc" stroke-width="1.2" />
+              <line x1="54" y1="148" x2="454" y2="148" stroke="#eeeae1" stroke-width="1" />
+              <line x1="54" y1="106" x2="454" y2="106" stroke="#eeeae1" stroke-width="1" />
+              <line x1="54" y1="64" x2="454" y2="64" stroke="#eeeae1" stroke-width="1" />
+
+              <text x="44" y="194" text-anchor="end" font-size="11" fill="#848076">40</text>
+              <text x="44" y="152" text-anchor="end" font-size="11" fill="#848076">60</text>
+              <text x="44" y="110" text-anchor="end" font-size="11" fill="#848076">75</text>
+              <text x="44" y="68" text-anchor="end" font-size="11" fill="#848076">90</text>
+              <text x="54" y="15" font-size="11" fill="#57544d" font-weight="600">
+                任务得分 (越高越好)
+              </text>
+              <text
+                x="454"
+                y="214"
+                text-anchor="end"
+                font-size="11"
+                fill="#57544d"
+                font-weight="600"
+              >
+                平均耗时 / 成本 (越左越快)
+              </text>
+
+              <polyline
+                points="154,148 214,82 374,76"
+                fill="none"
+                stroke="#2457a6"
+                stroke-width="1.6"
+                stroke-dasharray="4 4"
+                opacity="0.7"
+              />
+
+              <g class="pareto-point" data-pid="v0">
+                <circle
+                  cx="154"
+                  cy="148"
+                  r="7"
+                  fill="#ffffff"
+                  stroke="#6d6960"
+                  stroke-width="2.2"
+                />
+                <text x="166" y="152" font-size="12" fill="#57544d" font-weight="600">
+                  基线 v0 (60分 · 12s)
+                </text>
+              </g>
+              <g class="pareto-point" data-pid="bad">
+                <circle
+                  cx="316"
+                  cy="134"
+                  r="6.5"
+                  fill="#fcf1ec"
+                  stroke="#b34926"
+                  stroke-width="2"
+                />
+                <text x="328" y="138" font-size="11.5" fill="#b34926">淘汰候选 (64分 · 28s)</text>
+              </g>
+              <g class="pareto-point" data-pid="heavy">
+                <circle cx="374" cy="76" r="6.5" fill="#ffffff" stroke="#8eaad4" stroke-width="2" />
+                <text x="374" y="61" text-anchor="middle" font-size="11.5" fill="#57544d">
+                  高耗时候选 (82分 · 35s)
+                </text>
+              </g>
+              <g class="pareto-point" data-pid="v1">
+                <circle
+                  cx="214"
+                  cy="82"
+                  r="8.5"
+                  fill="#ebf7f1"
+                  stroke="#1d744a"
+                  stroke-width="2.6"
+                />
+                <text x="228" y="86" font-size="12.5" fill="#1d744a" font-weight="700">
+                  推荐上线 v1 (80分 · 14s)
+                </text>
+              </g>
+            </svg>
+            <div class="pareto-readout" id="pareto-readout">
+              <strong>推荐上线 v1：</strong>同一 Benchmark、同一 runtime 下候选更优；覆盖 predicate 与 runs 对称后，才签发 <code>approved</code>。
+            </div>
+          </div>
+
+          <div class="panel">
+            <div class="panel-head">
+              <h4>候选榜单与分项防回归检查</h4>
+              <span class="panel-note">对比基线 v0</span>
+            </div>
+            <table class="mini-table">
+              <thead>
+                <tr>
+                  <th>版本</th>
+                  <th>得分</th>
+                  <th>耗时</th>
+                  <th>门禁判定</th>
+                </tr>
+              </thead>
+              <tbody>
+                <tr>
+                  <td><strong>v1 (推荐)</strong></td>
+                  <td><span class="delta-up">80 (+20)</span></td>
+                  <td>14s</td>
+                  <td><span class="delta-up">approved</span></td>
+                </tr>
+                <tr>
+                  <td>高耗时候选</td>
+                  <td>82 (+22)</td>
+                  <td><span class="delta-warn">35s (+192%)</span></td>
+                  <td>耗时超阈值</td>
+                </tr>
+                <tr>
+                  <td>基线 v0</td>
+                  <td>60</td>
+                  <td>12s</td>
+                  <td>当前线上</td>
+                </tr>
+                <tr>
+                  <td>淘汰候选</td>
+                  <td>64 (+4)</td>
+                  <td><span class="delta-warn">28s</span></td>
+                  <td><span class="delta-warn">拒绝</span></td>
+                </tr>
+              </tbody>
+            </table>
+
+            <div class="case-matrix">
+              <div class="case-matrix-title">
+                分项得分变化（v0 -&gt; v1 · regressions_count = 0）
+              </div>
+              <div class="case-cells">
+                <div class="case-cell up">C1 +25</div>
+                <div class="case-cell up">C2 +15</div>
+                <div class="case-cell same">C3 持平</div>
+                <div class="case-cell up">C4 +30</div>
+                <div class="case-cell up">C5 +20</div>
+                <div class="case-cell same">C6 持平</div>
+                <div class="case-cell up">C7 +35</div>
+                <div class="case-cell up">C8 +35</div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <h3>全流程异常反馈与双向自愈（分步演示）</h3>
+        <div class="stage" data-stepper="error">
+  <div class="stage-toolbar">
+    <div class="stage-title-group">
+      <span class="stage-title">RsiError 捕获 → 同步用户与 Agent → 五类恢复 → 断点续跑</span>
+      <span class="step-counter" data-counter>步骤 1 / 4</span>
+    </div>
+    <div class="controls">
+      <button class="btn" type="button" data-action="prev">上一步</button>
+      <button class="btn btn-primary" type="button" data-action="next">下一步</button>
+      <button class="btn" type="button" data-action="play">自动播放</button>
+      <button class="btn" type="button" data-action="all">全览</button>
+    </div>
+  </div>
+  <div class="stage-canvas">
+    <svg viewBox="0 0 960 284" data-prefix="e" role="img" aria-label="RsiError 双向反馈与断点恢复流程图">
+      <defs>
+        <marker id="e-arr-muted" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="6" markerHeight="6" orient="auto"><path d="M 1 2 L 8.5 5 L 1 8 z" fill="#8eaad4" /></marker>
+        <marker id="e-arr-active" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="6.5" markerHeight="6.5" orient="auto"><path d="M 1 2 L 8.5 5 L 1 8 z" fill="#2457a6" /></marker>
+        <marker id="e-arr-ok" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="6.5" markerHeight="6.5" orient="auto"><path d="M 1 2 L 8.5 5 L 1 8 z" fill="#1d744a" /></marker>
+        <marker id="e-arr-warn" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="6.5" markerHeight="6.5" orient="auto"><path d="M 1 2 L 8.5 5 L 1 8 z" fill="#b34926" /></marker>
+      </defs>
+      <path id="e-err-cap" class="edge tone-warn" data-step="1" d="M 184 142 L 222 142" />
+      <path id="e-cap-user" class="edge" data-step="2" d="M 366 126 L 392 126 L 392 74 L 420 74" />
+      <path id="e-cap-agent" class="edge" data-step="2" d="M 366 158 L 392 158 L 392 210 L 420 210" />
+      <path id="e-user-fix" class="edge tone-ok" data-step="3" d="M 580 74 L 616 74" />
+      <path id="e-agent-fix" class="edge tone-ok" data-step="3" d="M 580 210 L 616 210" />
+      <path id="e-fix1-res" class="edge tone-ok" data-step="4" d="M 766 74 L 790 74 L 790 126 L 812 126" />
+      <path id="e-fix2-res" class="edge tone-ok" data-step="4" d="M 766 210 L 790 210 L 790 158 L 812 158" />
+      <g id="error-dots"></g>
+
+      <g class="node tone-warn" data-step="1">
+        <rect x="20" y="106" width="164" height="72" />
+        <text class="n-title" x="102" y="136" text-anchor="middle">1. 任意节点失败</text>
+        <text class="n-sub" x="102" y="156" text-anchor="middle">授权 / 版本 / 冲突</text>
+      </g>
+      <g class="node tone-warn" data-step="1" data-also="2">
+        <rect x="222" y="106" width="144" height="72" />
+        <text class="n-title" x="294" y="136" text-anchor="middle">捕获 RsiError</text>
+        <text class="n-sub" x="294" y="156" text-anchor="middle">code / phase / repair_hint</text>
+      </g>
+      <g class="node" data-step="2">
+        <rect x="420" y="38" width="160" height="72" />
+        <text class="n-title" x="500" y="68" text-anchor="middle">2a. 反馈工作台用户</text>
+        <text class="n-sub" x="500" y="88" text-anchor="middle">高亮卡点与操作</text>
+      </g>
+      <g class="node" data-step="2">
+        <rect x="420" y="174" width="160" height="72" />
+        <text class="n-title" x="500" y="204" text-anchor="middle">2b. 反馈修复 Agent</text>
+        <text class="n-sub" x="500" y="224" text-anchor="middle">脱敏诊断 · 严禁泄题</text>
+      </g>
+      <g class="node tone-ok" data-step="3">
+        <rect x="616" y="38" width="150" height="72" />
+        <text class="n-title" x="691" y="68" text-anchor="middle">3a. 人工处置</text>
+        <text class="n-sub" x="691" y="88" text-anchor="middle">信任 / 放行 / 合并</text>
+      </g>
+      <g class="node tone-ok" data-step="3">
+        <rect x="616" y="174" width="150" height="72" />
+        <text class="n-title" x="691" y="204" text-anchor="middle">3b. Agent 自动修复</text>
+        <text class="n-sub" x="691" y="224" text-anchor="middle">补拉 / 重推 / 重建</text>
+      </g>
+      <g class="node tone-ok" data-step="4">
+        <rect x="812" y="106" width="132" height="72" />
+        <text class="n-title" x="878" y="136" text-anchor="middle">4. 断点续跑</text>
+        <text class="n-sub" x="878" y="156" text-anchor="middle">保留 revision 与 pin</text>
+      </g>
+    </svg>
+  </div>
+  <div class="stage-footer">
+    <div class="narration">
+      <span class="narration-badge" data-badge>步骤 1</span>
+      <div class="narration-body">
+        <p class="narration-title" data-title></p>
+        <p class="narration-desc" data-desc></p>
+      </div>
+    </div>
+    <div class="step-rail" data-rail></div>
+  </div>
+</div>
+      </section>
+
+            <!-- Section 4: Roadmap -->
+<section id="roadmap">
+        <div class="section-head">
+          <div class="section-num">04 / 后续落地路线</div>
+          <h2>先冻结语义骨架，再打通底座、云 Codex 闭环与工作台</h2>
+          <p class="section-lead">
+            先冻结身份、revision、合并规则、可见性与 Skill/Proof 契约；再用 Codex 真机跑通 M2a/M2b；最后同步工作台与 HTML。首轮目标是在开源 Codex CLI 上用一个可测任务跑通 Skill 优化闭环。
+          </p>
+        </div>
+
+        <div class="roadmap-grid">
+          <div class="road-item current">
+            <div class="road-phase">M0 · 当前阶段</div>
+            <h4>协议语义冻结</h4>
+            <p>冻结 11 方法、<code>SessionSnapshot</code>、revision/摘要合并、可见性/离线矩阵、<code>SkillBundle</code> 与 <code>VerificationProof</code>；A1–A9 已拍板。</p>
+          </div>
+          <div class="road-item">
+            <div class="road-phase">M1</div>
+            <h4>类型、存储与算法</h4>
+            <p>落 <code>(source_id, session_id)</code> 键、revision CAS、snapshot/delta 合并、gaps、Skill hash、proof builder 与两个 ID 算法。</p>
+          </div>
+          <div class="road-item">
+            <div class="road-phase">M2a / M2b</div>
+            <h4>Codex Adapter 与首轮闭环</h4>
+            <p>M2a：A–H + list/info/hooks/auth/push-only；M2b：真实 v0/v1、proof、push、分数/覆盖与回滚。M2 退出 = 两者都过。</p>
+          </div>
+          <div class="road-item">
+            <div class="road-phase">M3</div>
+            <h4>工作台与展示稿</h4>
+            <p>出题/评估/优化三个标签 + 上线收尾、可见性徽标、缺口面板、Pareto 与异常恢复；HTML 按字段/方法/错误码清单复核。</p>
+          </div>
+        </div>
+      </section>
+
+            <footer>
+        <span>RSI API 架构设计与统一协议规范（V2）· 单文件离线阅读与演示版本</span>
+        <span>对应规范文档：docs/rsi-api-architecture-v2.md</span>
+      </footer>
+    </main>
+
+    <script>
+      (function () {
+        const STEPPERS = {
+          main: {
+            dotLayerId: "main-dots",
+            steps: [
+              {
+                badge: "起点 · 外部运行",
+                tone: "",
+                label: "0. 外部运行",
+                title: "外部 Harness 正常运行：原生日志与线上 Skill 是采集和回写的两端",
+                desc: "Agent 用线上 Skill 干活，产生原生日志/会话分片；Hook 可选，只负责登记变化，不阻塞主流程。",
+              },
+              {
+                badge: "第 1 步 · 探测与接入",
+                tone: "",
+                label: "1. 探测与接入",
+                title: "harness.info 先声明能力与可见性；需要运行时更新才 hooks.install",
+                desc: "pull 可用时先读能力；Hook 新装可能 pending_trust，必须人工 /hooks 信任；B1 App Server 通知流与 B2 command Hook 分开验收。",
+              },
+              {
+                badge: "第 2 步 · 双路径采集",
+                tone: "",
+                label: "2. 双路径采集",
+                title: "历史 traces.list/pull 纯读；运行中 traces.push 增量；两路汇入 rsi_* 独立存储",
+                desc: "按 (source_id, session_id) 定位；delta 只追加精确后缀，snapshot 表达历史回退；重复、乱序与旧快照由 revision + content_sha256 + metadata_sha256 仲裁。",
+              },
+              {
+                badge: "第 3 步 · 拉基线",
+                tone: "",
+                label: "3. 拉 v0",
+                title: "skills.pull 拉完整 SkillBundle，锁定 content_sha256 与 base_hashes",
+                desc: "完整目录包，不传子集；Codex pull 读 user/repo 可读作用域；v0 是后续 Proof 的 baseline。",
+              },
+              {
+                badge: "第 4 步 · 离线优化",
+                tone: "",
+                label: "4. 优化 v1",
+                title: "Benchmark + pin 旧 revision；在隔离环境迭代 v1",
+                desc: "Codex 真机 runner 使用临时 CODEX_HOME；候选 Skill out-of-band 安装；每 case 2–3 runs，held-out 预先冻结。",
+              },
+              {
+                badge: "第 5 步 · Proof 闸门",
+                tone: "ok",
+                label: "5. Proof 闸门",
+                title: "VerificationProof 绑定 target、candidate_hashes、coverage 与 runs",
+                desc: "approved 要求关键域 available、excluded=0、case 集合一致、runs 对称；否则只能 override_by_user 并留 override_reason。",
+              },
+              {
+                badge: "第 6 步 · 写回 / 回滚",
+                tone: "ok",
+                label: "6. 写回 v1",
+                title: "skills.push 校验 proof + base_hashes + 候选摘要；staging → backup → 替换",
+                desc: "applied 是写入，trust_state 是生效；异常 skills.rollback(backup_id, expected_current_hashes)；观察继续用 traces.*。",
+              },
+            ],
+          },
+          transfer: {
+            dotLayerId: "transfer-dots",
+            steps: [
+              {
+                badge: "阶段 1 · 拉基线",
+                tone: "",
+                label: "1. skills.pull",
+                title: "harness.info + skills.pull 拉完整 SkillBundle v0",
+                desc: "Codex pull 读 user/repo 可读作用域；锁定 content_sha256 作为 base_hashes。",
+              },
+              {
+                badge: "阶段 2 · Proof",
+                tone: "",
+                label: "2. Proof",
+                title: "Benchmark + pin + held-out，生成 VerificationProof",
+                desc: "baseline v0 / candidate v1 同 model/thinking；runs 对称；coverage 与 regressions 写入 proof。",
+              },
+              {
+                badge: "阶段 3 · 推送校验",
+                tone: "",
+                label: "3. skills.push",
+                title: "skills.push(request_id, base_hashes, proof, candidate_hashes)",
+                desc: "Adapter 重算候选摘要，校验 proof/target/coverage/hash；request_id 幂等。",
+              },
+              {
+                badge: "阶段 4 · 写回",
+                tone: "ok",
+                label: "4. staging / backup",
+                title: "staging → backup_id → 整目录替换；响应 bundle_hashes + trust_state",
+                desc: "冲突返回 409 skill_conflict_detected；同 request_id 不同 payload 返回 request_id_conflict；响应丢失重试返回 already_applied。",
+                conflictTitle: "外部 Skill 已被修改，返回 409 skill_conflict_detected / request_id_conflict",
+                conflictDesc:
+                  "Adapter 拦截覆盖并返回 expected/actual 哈希与 diff；人工合并后带更新后的 base_hashes 重推。",
+              },
+              {
+                badge: "阶段 5 · 回滚",
+                tone: "warn",
+                label: "5. rollback",
+                title: "观察异常时 skills.rollback(backup_id, expected_current_hashes)",
+                desc: "expected_current_hashes 防止覆盖别人修改；已恢复返回 already_restored；新建 Skill 回滚为删除目录。",
+              },
+            ],
+          },
+          error: {
+            dotLayerId: "error-dots",
+            steps: [
+              {
+                badge: "步骤 1 · 捕获",
+                tone: "warn",
+                label: "1. RsiError",
+                title: "任一节点失败：捕获 code / phase / retryable / repair_hint / details",
+                desc: "错误码闭合，一码一 HTTP 状态；repair_hint 不泄露私有评分细则。",
+              },
+              {
+                badge: "步骤 2 · 双端同步",
+                tone: "",
+                label: "2. 用户 + Agent",
+                title: "工作台用户看到卡点与操作；修复 Agent 收到脱敏诊断",
+                desc: "防泄题：私有评分细则、Gold 与评分条件不进入 repair_hint 或 Agent 上下文。",
+              },
+              {
+                badge: "步骤 3 · 五类恢复",
+                tone: "ok",
+                label: "3. 五类恢复",
+                title: "补拉、重推/重建、重新授权、人工处置、接受降级",
+                desc: "revision_gap → 补拉或改推 snapshot；revision_conflict → 人工核对；hook_trust_pending → 人工信任；skill_conflict → 人工合并。",
+              },
+              {
+                badge: "步骤 4 · 续跑",
+                tone: "ok",
+                label: "4. 断点续跑",
+                title: "保留已入库 revision、Benchmark 与 pin，从断点继续",
+                desc: "无需从头重跑；未修复的缺口留在 gaps / sync，不伪装成完整。",
+              },
+            ],
+          },
+        };
+
+        let activeController = null;
+
+        function setMarker(pathEl, state, prefix) {
+          const p = prefix ? prefix + "-" : "";
+          const isOk = pathEl.classList.contains("tone-ok");
+          const isWarn = pathEl.classList.contains("tone-warn");
+          if (state === "active") {
+            pathEl.setAttribute(
+              "marker-end",
+              "url(#" + p + (isOk ? "arr-ok" : isWarn ? "arr-warn" : "arr-active") + ")",
+            );
+          } else {
+            pathEl.setAttribute("marker-end", "url(#" + p + "arr-muted)");
+          }
+        }
+
+        function animatePathDraw(pathEl) {
+          const len = pathEl.getTotalLength();
+          pathEl.style.transition = "none";
+          pathEl.style.strokeDasharray = String(len);
+          pathEl.style.strokeDashoffset = String(len);
+          pathEl.getBoundingClientRect();
+          pathEl.style.transition =
+            "stroke-dashoffset 0.55s cubic-bezier(0.22, 1, 0.36, 1), opacity 0.2s ease";
+          pathEl.style.strokeDashoffset = "0";
+        }
+
+        function clearPathDraw(pathEl) {
+          pathEl.style.transition = "";
+          pathEl.style.strokeDasharray = "";
+          pathEl.style.strokeDashoffset = "";
+        }
+
+        function mountStepper(stageEl) {
+          const key = stageEl.dataset.stepper;
+          const cfg = STEPPERS[key];
+          const svg = stageEl.querySelector("svg");
+          const dotLayer = svg.querySelector("#" + cfg.dotLayerId);
+          const counterEl = stageEl.querySelector("[data-counter]");
+          const badgeEl = stageEl.querySelector("[data-badge]");
+          const titleEl = stageEl.querySelector("[data-title]");
+          const descEl = stageEl.querySelector("[data-desc]");
+          const railEl = stageEl.querySelector("[data-rail]");
+          const prevBtn = stageEl.querySelector('[data-action="prev"]');
+          const nextBtn = stageEl.querySelector('[data-action="next"]');
+          const playBtn = stageEl.querySelector('[data-action="play"]');
+          const allBtn = stageEl.querySelector('[data-action="all"]');
+          const resetBtn = stageEl.querySelector('[data-action="reset"]');
+          const branchBtns = Array.from(stageEl.querySelectorAll("[data-branch]"));
+
+          const minStep = key === "main" ? 0 : 1;
+          const maxStep = key === "main" ? cfg.steps.length - 1 : cfg.steps.length;
+          let current = minStep;
+          let showAll = false;
+          let timer = null;
+          let branch = "ok";
+          let animFrame = null;
+          let activeDotPaths = [];
+
+          railEl.innerHTML = "";
+          const chips = cfg.steps.map((s, idx) => {
+            const stepNum = key === "main" ? idx : idx + 1;
+            const chip = document.createElement("button");
+            chip.type = "button";
+            chip.className = "step-chip";
+            chip.textContent = s.label;
+            chip.addEventListener("click", () => {
+              activeController = controller;
+              stopPlay();
+              showAll = false;
+              current = stepNum;
+              render(true);
+            });
+            railEl.appendChild(chip);
+            return { stepNum, chip };
+          });
+
+          function stopDots() {
+            if (animFrame) {
+              cancelAnimationFrame(animFrame);
+              animFrame = null;
+            }
+            if (dotLayer) dotLayer.innerHTML = "";
+            activeDotPaths = [];
+          }
+
+          function startDots(paths) {
+            stopDots();
+            if (!dotLayer || !paths.length) return;
+            const ns = "http://www.w3.org/2000/svg";
+            activeDotPaths = paths.map((p) => {
+              const c = document.createElementNS(ns, "circle");
+              c.setAttribute("r", "3.6");
+              c.classList.add("edge-dot", "visible");
+              if (p.classList.contains("tone-ok")) c.classList.add("tone-ok");
+              if (p.classList.contains("tone-warn")) c.classList.add("tone-warn");
+              dotLayer.appendChild(c);
+              return { path: p, circle: c, len: p.getTotalLength() };
+            });
+
+            const duration = 1600;
+            const start = performance.now();
+            function tick(now) {
+              const t = ((now - start) % duration) / duration;
+              for (const item of activeDotPaths) {
+                const pt = item.path.getPointAtLength(t * item.len);
+                item.circle.setAttribute("cx", pt.x.toFixed(1));
+                item.circle.setAttribute("cy", pt.y.toFixed(1));
+              }
+              animFrame = requestAnimationFrame(tick);
+            }
+            animFrame = requestAnimationFrame(tick);
+          }
+
+          function updateBranchVisibility() {
+            if (!branchBtns.length) return;
+            const groups = svg.querySelectorAll("[data-branch-group]");
+            groups.forEach((g) => {
+              g.style.display = g.dataset.branchGroup === branch ? "" : "none";
+            });
+            branchBtns.forEach((b) => {
+              const isAct = b.dataset.branch === branch;
+              b.classList.toggle("active", isAct);
+              b.classList.toggle("warn", isAct && branch === "conflict");
+            });
+          }
+
+          function nodeState(el) {
+            if (showAll) return "done";
+            const s = Number(el.dataset.step);
+            const also = (el.dataset.also || "").split(",").filter(Boolean).map(Number);
+            if (s === 0 && key === "transfer") return "done";
+            if (s === current || also.includes(current)) return "active";
+            if (s < current) return "done";
+            return "upcoming";
+          }
+
+          function itemState(el) {
+            if (showAll) return "done";
+            const s = Number(el.dataset.step);
+            if (s === current) return "active";
+            if (s < current) return "done";
+            return "upcoming";
+          }
+
+          function render(withDraw) {
+            updateBranchVisibility();
+
+            svg.querySelectorAll(".node").forEach((n) => {
+              n.setAttribute("data-state", nodeState(n));
+            });
+
+            const activePaths = [];
+            svg.querySelectorAll(".edge").forEach((e) => {
+              const parentBranch = e.closest("[data-branch-group]");
+              if (parentBranch && parentBranch.dataset.branchGroup !== branch) {
+                clearPathDraw(e);
+                return;
+              }
+              const st = itemState(e);
+              e.setAttribute("data-state", st);
+              setMarker(e, st, svg.dataset.prefix || "");
+              if (st === "active") {
+                if (withDraw) animatePathDraw(e);
+                else clearPathDraw(e);
+                activePaths.push(e);
+              } else {
+                clearPathDraw(e);
+              }
+            });
+
+            svg.querySelectorAll(".edge-label").forEach((l) => {
+              l.setAttribute("data-state", itemState(l));
+            });
+
+            if (showAll) {
+              stopDots();
+              counterEl.textContent = "全览模式";
+              badgeEl.textContent = "全局视图";
+              badgeEl.className = "narration-badge";
+              titleEl.textContent = "已展开全部节点与路径";
+              descEl.textContent = "点击任意下方步骤标签或「下一步」，可切换回逐步动画演示模式。";
+            } else {
+              startDots(activePaths);
+              const idx = key === "main" ? current : current - 1;
+              const meta = cfg.steps[idx];
+              counterEl.textContent = "步骤 " + current + " / " + maxStep;
+              badgeEl.textContent = meta.badge;
+              let tone = meta.tone;
+              let tText = meta.title;
+              let dText = meta.desc;
+              if (key === "transfer" && current === 4 && branch === "conflict") {
+                tone = "warn";
+                tText = meta.conflictTitle;
+                dText = meta.conflictDesc;
+              }
+              badgeEl.className = "narration-badge" + (tone ? " tone-" + tone : "");
+              titleEl.textContent = tText;
+              descEl.textContent = dText;
+            }
+
+            chips.forEach(({ stepNum, chip }) => {
+              chip.classList.toggle("is-active", !showAll && stepNum === current);
+              chip.classList.toggle("is-done", showAll || stepNum < current);
+            });
+
+            prevBtn.disabled = !showAll && current <= minStep;
+            nextBtn.disabled = !showAll && current >= maxStep;
+            if (allBtn) allBtn.classList.toggle("btn-active", showAll);
+          }
+
+          function stopPlay() {
+            if (timer) {
+              clearInterval(timer);
+              timer = null;
+            }
+            if (playBtn) {
+              playBtn.textContent = "自动播放";
+              playBtn.classList.remove("btn-active");
+            }
+          }
+
+          function togglePlay() {
+            activeController = controller;
+            if (timer) {
+              stopPlay();
+              return;
+            }
+            showAll = false;
+            if (current >= maxStep) current = minStep;
+            render(true);
+            playBtn.textContent = "暂停播放";
+            playBtn.classList.add("btn-active");
+            timer = setInterval(() => {
+              if (current >= maxStep) {
+                stopPlay();
+                return;
+              }
+              current += 1;
+              render(true);
+            }, 2400);
+          }
+
+          prevBtn.addEventListener("click", () => {
+            activeController = controller;
+            stopPlay();
+            if (showAll) {
+              showAll = false;
+              current = maxStep;
+            } else if (current > minStep) {
+              current -= 1;
+            }
+            render(true);
+          });
+
+          nextBtn.addEventListener("click", () => {
+            activeController = controller;
+            stopPlay();
+            if (showAll) {
+              showAll = false;
+              current = minStep;
+            } else if (current < maxStep) {
+              current += 1;
+            }
+            render(true);
+          });
+
+          if (playBtn) playBtn.addEventListener("click", togglePlay);
+
+          if (allBtn) {
+            allBtn.addEventListener("click", () => {
+              activeController = controller;
+              stopPlay();
+              showAll = !showAll;
+              render(false);
+            });
+          }
+
+          if (resetBtn) {
+            resetBtn.addEventListener("click", () => {
+              activeController = controller;
+              stopPlay();
+              showAll = false;
+              current = minStep;
+              render(true);
+            });
+          }
+
+          branchBtns.forEach((b) => {
+            b.addEventListener("click", () => {
+              activeController = controller;
+              stopPlay();
+              branch = b.dataset.branch;
+              showAll = false;
+              current = 4;
+              render(true);
+            });
+          });
+
+          const controller = {
+            prev() {
+              prevBtn.click();
+            },
+            next() {
+              nextBtn.click();
+            },
+          };
+
+          render(false);
+          return controller;
+        }
+
+        const controllers = {};
+        document.querySelectorAll(".stage[data-stepper]").forEach((el) => {
+          controllers[el.dataset.stepper] = mountStepper(el);
+        });
+        activeController = controllers.main;
+
+        // Schema tabs switcher
+        document.querySelectorAll("[data-tabs]").forEach((box) => {
+          const tabs = Array.from(box.querySelectorAll("[data-tab]"));
+          const panes = Array.from(box.querySelectorAll("[data-pane]"));
+          tabs.forEach((t) => {
+            t.addEventListener("click", () => {
+              const id = t.dataset.tab;
+              tabs.forEach((x) => x.classList.toggle("active", x.dataset.tab === id));
+              panes.forEach((p) => p.classList.toggle("active", p.dataset.pane === id));
+            });
+          });
+        });
+
+        // Keyboard navigation for active diagram
+        document.addEventListener("keydown", (e) => {
+          if (e.target && (e.target.tagName === "INPUT" || e.target.tagName === "TEXTAREA")) return;
+          if (!activeController) return;
+          if (e.key === "ArrowRight") {
+            e.preventDefault();
+            activeController.next();
+          } else if (e.key === "ArrowLeft") {
+            e.preventDefault();
+            activeController.prev();
+          }
+        });
+
+        // Pareto point interaction
+        const paretoCopy = {
+          v0: "<strong>基线 v0（示例分数）：</strong>当前线上 Agent State；所有离线优化与 Proof 都相对它比较。",
+          v1: "<strong>推荐上线 v1：</strong>同一 Benchmark、同一 runtime 下候选更优，覆盖 predicate 与 runs 对称后签发 approved。",
+          heavy:
+            "<strong>高耗时候选：</strong>分数略高但耗时/成本明显上升；帕累托判定不允许自动放行，只能人工 override。",
+          bad: "<strong>淘汰候选：</strong>分数没有提升、成本更高，被 v1 帕累托支配，门禁直接拒绝。",
+        };
+        const readout = document.getElementById("pareto-readout");
+        document.querySelectorAll(".pareto-point").forEach((pt) => {
+          const update = () => {
+            const id = pt.dataset.pid;
+            if (paretoCopy[id]) readout.innerHTML = paretoCopy[id];
+          };
+          pt.addEventListener("click", update);
+          pt.addEventListener("mouseenter", update);
+        });
+
+        // Highlight active nav link on scroll
+        const navLinks = Array.from(document.querySelectorAll('.nav-links a[href^="#"]'));
+        const targets = navLinks
+          .map((a) => ({ a, el: document.querySelector(a.getAttribute("href")) }))
+          .filter((x) => x.el);
+
+        if ("IntersectionObserver" in window && targets.length) {
+          const io = new IntersectionObserver(
+            (entries) => {
+              for (const entry of entries) {
+                if (entry.isIntersecting) {
+                  navLinks.forEach((a) => a.classList.remove("active"));
+                  const hit = targets.find((t) => t.el === entry.target);
+                  if (hit) hit.a.classList.add("active");
+                }
+              }
+            },
+            { rootMargin: "-25% 0px -60% 0px" },
+          );
+          targets.forEach((t) => io.observe(t.el));
+        }
+      })();
+    </script>
+  </body>
+</html>
